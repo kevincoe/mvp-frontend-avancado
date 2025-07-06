@@ -1,24 +1,25 @@
 # Sistema de Gerenciamento Bancário
 
-Um sistema completo de gerenciamento bancário para gerentes, desenvolvido com React, TypeScript, Material-UI e React Router. O sistema permite o gerenciamento de contas bancárias e investimentos de clientes, com integração a APIs externas para cotações financeiras.
+Um sistema completo de gerenciamento bancário para gerentes, desenvolvido com React, TypeScript, Material-UI e React Router. O sistema permite o gerenciamento de contas bancárias e investimentos de clientes, com integração à Financial Modeling Prep API para cotações de ações americanas em tempo real.
 
 ## 📋 Características
 
 ### Funcionalidades Principais
 - **Gestão de Contas Bancárias**: Criar, editar, visualizar e excluir contas bancárias
-- **Gestão de Investimentos**: Gerenciar carteiras de investimentos dos clientes
-- **Cotações em Tempo Real**: Integração com APIs externas para cotações de ações e dólar
-- **Dashboard Analítico**: Visão geral dos dados financeiros
+- **Gestão de Investimentos**: Gerenciar carteiras de investimentos dos clientes com ações americanas
+- **Cotações em Tempo Real**: Integração com Financial Modeling Prep API para cotações de ações americanas
+- **Dashboard Analítico**: Visão geral dos dados financeiros com gráficos e métricas
 - **Responsive Design**: Interface adaptável para desktop, tablet e mobile
+- **Sistema de Cache**: Cache inteligente para otimizar requisições à API
 
 ### Tecnologias Utilizadas
 - **Frontend**: React 19, TypeScript, Material-UI v7
-- **Roteamento**: React Router v7
-- **Estilização**: Material-UI + Emotion
-- **Validação**: Validação nativa de formulários
+- **Roteamento**: React Router v7 com SSR/Hydration
+- **Estilização**: Material-UI + Emotion (tema claro personalizado)
+- **Validação**: Validação nativa de formulários com feedback em tempo real
 - **Armazenamento**: localStorage para persistência local
 - **HTTP Client**: Axios para requisições à API
-- **API Externa**: Yahoo Finance para cotações financeiras
+- **API Externa**: Financial Modeling Prep para cotações de ações americanas
 
 ## 🚀 Instalação e Execução
 
@@ -29,7 +30,7 @@ Um sistema completo de gerenciamento bancário para gerentes, desenvolvido com R
 ### Instalação
 ```bash
 # Clone o repositório
-git clone <seu-repositorio>
+git clone https://github.com/kevincoe/mvp-frontend-avancado.git
 
 # Navegue para o diretório
 cd frontend-gerente-bancario
@@ -86,68 +87,83 @@ frontend-gerente-bancario/
 
 ## 🔧 APIs Utilizadas
 
-### Yahoo Finance API (Gratuita)
-- **Descrição**: API para cotações de ações e câmbio
-- **Licença**: Gratuita para uso pessoal
-- **Cadastro**: Não requer cadastro
-- **Endpoints utilizados**:
-  - Cotação do Dólar: `https://query1.finance.yahoo.com/v8/finance/chart/USDBRL=X`
-  - Cotações de Ações: `https://query1.finance.yahoo.com/v8/finance/chart/{symbol}`
-
-### Alpha Vantage API (Alternativa)
-- **Descrição**: API financeira com dados de mercado
-- **Licença**: Gratuita com limitações
+### Financial Modeling Prep API
+- **Descrição**: API profissional para dados financeiros em tempo real
+- **Licença**: Gratuita com limitações de requisições
 - **Cadastro**: Requer API key gratuita
-- **Site**: https://www.alphavantage.co/
+- **Site**: https://financialmodelingprep.com/
+- **Endpoints utilizados**:
+  - Cotação de Ações: `https://financialmodelingprep.com/api/v3/quote/{symbol}`
+  - Cotação do Dólar: `https://financialmodelingprep.com/api/v3/fx/USDBRL`
+  - Busca de Ações: `https://financialmodelingprep.com/api/v3/search`
+
+### Funcionalidades da API
+- **Cotações em Tempo Real**: Preços atualizados de ações americanas
+- **Busca de Símbolos**: Busca por símbolos de ações americanas
+- **Dados de Câmbio**: Cotação USD/BRL
+- **Cache Inteligente**: Sistema de cache de 30 segundos para otimizar requisições
+- **Tratamento de Erros**: Logs detalhados e mensagens de erro amigáveis
+
+### Limitações
+- Suporte apenas para ações americanas (NASDAQ, NYSE)
+- Não suporta ações brasileiras (B3)
+- Limite de 150 requisições por dia na versão gratuita
+- Dados com delay de 15 minutos na versão gratuita
 
 ## 📱 Componentes Reutilizáveis
 
-1. **Header**: Cabeçalho com logo e navegação
+1. **Header**: Cabeçalho com logo e navegação simplificada
 2. **LoadingSpinner**: Indicador de carregamento
-3. **ErrorAlert**: Alertas de erro e sucesso
-4. **ConfirmDialog**: Modal de confirmação
+3. **ErrorAlert**: Alertas de erro, sucesso e informações
+4. **ConfirmDialog**: Modal de confirmação para ações críticas
 5. **SearchField**: Campo de busca reutilizável
-6. **AccountCard**: Card para exibir dados de conta
-7. **InvestmentCard**: Card para exibir investimentos
-8. **CustomButton**: Botão personalizado com animações
+6. **CustomButton**: Botão personalizado com animações
 
 ## 🎨 Features de Usabilidade
 
 - **Feedback Visual**: Indicadores de carregamento, sucesso e erro
-- **Tooltips**: Explicações rápidas sobre funcionalidades
 - **Mensagens Condicionais**: "Nenhum item encontrado", "Erro ao carregar"
 - **Layout Responsivo**: Funciona em todos os dispositivos
-- **Navegação Intuitiva**: Breadcrumbs e navegação clara
+- **Navegação Intuitiva**: Navegação clara entre páginas
 - **Validação de Formulários**: Feedback em tempo real
+- **Sistema de Cache**: Evita requisições desnecessárias à API
+- **Busca Manual**: Busca de ações americanas por símbolo (AAPL, MSFT, etc.)
 
-## 🔄 Funcionalidades Implementadas
+### 🔄 Funcionalidades Implementadas
 
-### Componentização (3,5 pts)
-- ✅ 3 páginas principais com componentes reutilizáveis
-- ✅ Formulários com validação e localStorage
-- ✅ 8+ componentes reutilizáveis
-- ✅ Interfaces e soluções originais
+## 🚀 Como Usar
 
-### React e Roteamento (2,0 pts)
-- ✅ Uso correto de useState, useEffect, useParams, useLocation, useNavigate
-- ✅ Navegação entre páginas com React Router
-- ✅ Rota 404 para URLs inexistentes
+### Gestão de Contas
+1. Acesse "Contas" no menu
+2. Clique em "Nova Conta" para criar uma conta bancária
+3. Preencha os dados do cliente e informações da conta
+4. Visualize, edite ou exclua contas existentes
 
-### Comunicação com API (1,0 pt)
-- ✅ Consumo de API externa (Yahoo Finance)
-- ✅ Tratamento de erros e loading
-- ✅ Exibição de mensagens amigáveis
+### Gestão de Investimentos
+1. Acesse "Investimentos" no menu
+2. Clique em "Novo Investimento"
+3. Selecione uma conta existente
+4. Digite o símbolo da ação americana (ex: AAPL, MSFT, GOOGL)
+5. Clique em "Buscar" para obter a cotação atual
+6. Ajuste a quantidade e salve o investimento
 
-### Usabilidade (1,5 pt)
-- ✅ Feedback visual completo
-- ✅ Layout responsivo
-- ✅ Tooltips e mensagens condicionais
+### Símbolos Suportados
+- **AAPL** - Apple Inc.
+- **MSFT** - Microsoft Corporation
+- **GOOGL** - Alphabet Inc.
+- **AMZN** - Amazon.com Inc.
+- **TSLA** - Tesla Inc.
+- **NVDA** - NVIDIA Corporation
+- **META** - Meta Platforms Inc.
+- **E muitos outros símbolos da NASDAQ e NYSE**
 
-### Organização e Documentação (2,0 pts)
-- ✅ Projeto no GitHub
-- ✅ README.md completo
-- ✅ Estrutura de pastas organizada
-- ✅ Boas práticas de nomenclatura
+## ⚠️ Limitações Conhecidas
+
+1. **Apenas Ações Americanas**: A API atual suporta apenas ações americanas (NASDAQ, NYSE)
+2. **Não Suporta B3**: Ações brasileiras não são suportadas
+3. **Limite de API**: Versão gratuita possui limite de requisições diárias
+4. **Delay de Dados**: Dados com delay de 15 minutos na versão gratuita
+5. **Cache de 30s**: Sistema de cache evita requisições excessivas
 
 ## 🤝 Contribuição
 
@@ -162,43 +178,9 @@ frontend-gerente-bancario/
 Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
 
 ## 👥 Autor
-
+Kevin Mailho Coe
 Desenvolvido como parte do MVP de Frontend Avançado da PUC-Rio.
-
-```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
-```
-
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
-```
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
 
 ---
 
-Built with ❤️ using React Router.
+**Nota**: Este sistema foi desenvolvido para fins educacionais e demonstra a integração com APIs externas, gerenciamento de estado, componentização e boas práticas de desenvolvimento React/TypeScript.
