@@ -1,13 +1,13 @@
 # Sistema de Gerenciamento Bancário
 
-Um sistema completo de gerenciamento bancário para gerentes, desenvolvido com React, TypeScript, Material-UI e React Router. O sistema permite o gerenciamento de contas bancárias e investimentos de clientes, com integração à Financial Modeling Prep API para cotações de ações americanas em tempo real.
+Um sistema completo de gerenciamento bancário para gerentes, desenvolvido com React, TypeScript, Material-UI e React Router. O sistema permite o gerenciamento de contas bancárias e investimentos de clientes, com integração à Financial Modeling Prep API para cotações de ações estadunidenses em tempo real.
 
 ## 📋 Características
 
 ### Funcionalidades Principais
 - **Gestão de Contas Bancárias**: Criar, editar, visualizar e excluir contas bancárias
-- **Gestão de Investimentos**: Gerenciar carteiras de investimentos dos clientes com ações americanas
-- **Cotações em Tempo Real**: Integração com Financial Modeling Prep API para cotações de ações americanas
+- **Gestão de Investimentos**: Gerenciar carteiras de investimentos dos clientes com ações estadunidenses
+- **Cotações em Tempo Real**: Integração com Financial Modeling Prep API para cotações de ações estadunidenses
 - **Dashboard Analítico**: Visão geral dos dados financeiros com gráficos e métricas
 - **Responsive Design**: Interface adaptável para desktop, tablet e mobile
 - **Sistema de Cache**: Cache inteligente para otimizar requisições à API
@@ -19,7 +19,7 @@ Um sistema completo de gerenciamento bancário para gerentes, desenvolvido com R
 - **Validação**: Validação nativa de formulários com feedback em tempo real
 - **Armazenamento**: localStorage para persistência local
 - **HTTP Client**: Axios para requisições à API
-- **API Externa**: Financial Modeling Prep para cotações de ações americanas
+- **API Externa**: Financial Modeling Prep para cotações de ações estadunidenses
 
 ## 🚀 Instalação e Execução
 
@@ -56,36 +56,62 @@ npm run build
 npm start
 ```
 
-## 📁Estrutura do Projeto
+## 📁 Estrutura do Projeto
 
 ```
 frontend-gerente-bancario/
+├── .dockerignore
+├── .env
+├── .gitignore
+├── Dockerfile
+├── package.json
+├── react-router.config.ts
+├── README.md
+├── tsconfig.json
+├── vite.config.ts
+├── .react-router/
+│   └── types/
+│       ├── +future.ts
+│       ├── +routes.ts
+│       ├── +server-build.d.ts
+│       └── app/
 ├── app/
-│   ├── components/          # Componentes reutilizáveis
+│   ├── app.css
+│   ├── root.tsx
+│   ├── routes.ts
+│   ├── theme.tsx
+│   ├── components/              # Componentes reutilizáveis
+│   │   ├── ConfirmDialog.tsx
+│   │   ├── CustomButton.tsx
+│   │   ├── ErrorAlert.tsx
 │   │   ├── Header.tsx
 │   │   ├── LoadingSpinner.tsx
-│   │   ├── ErrorAlert.tsx
-│   │   ├── ConfirmDialog.tsx
-│   │   └── ...
-│   ├── routes/             # Páginas/rotas da aplicação
-│   │   ├── home.tsx        # Dashboard principal
-│   │   ├── accounts.tsx    # Gestão de contas
-│   │   ├── investments.tsx # Gestão de investimentos
-│   │   └── ...
-│   ├── services/           # Serviços e APIs
-│   │   ├── api.ts
-│   │   ├── storage.ts
-│   │   └── finance.ts
-│   ├── types/              # Definições de tipos TypeScript
+│   │   └── SearchField.tsx
+│   ├── routes/                  # Páginas/rotas da aplicação
+│   │   ├── 404.tsx             # Página de erro 404
+│   │   ├── home.tsx            # Dashboard principal
+│   │   ├── accounts.tsx        # Lista de contas
+│   │   ├── accounts.new.tsx    # Nova conta
+│   │   ├── accounts.edit.tsx   # Editar conta
+│   │   ├── accounts.detail.tsx # Detalhes da conta
+│   │   ├── investments.tsx     # Lista de investimentos
+│   │   ├── investments.new.tsx # Novo investimento
+│   │   ├── investments.edit.tsx # Editar investimento
+│   │   └── investments.detail.tsx # Detalhes do investimento
+│   ├── services/               # Serviços e APIs
+│   │   ├── api.ts             # Configuração geral da API
+│   │   ├── finance.ts         # Serviço da Financial Modeling Prep API
+│   │   └── storage.ts         # Gerenciamento do localStorage
+│   ├── types/                  # Definições de tipos TypeScript
 │   │   └── index.ts
-│   ├── utils/              # Utilitários
-│   │   └── formatters.ts
-│   └── root.tsx            # Root da aplicação
-├── public/                 # Arquivos públicos
-└── ...
+│   ├── utils/                  # Utilitários
+│   │   └── formatters.ts      # Formatadores e validadores
+│   └── welcome/               # Páginas de boas-vindas
+└── public/                    # Arquivos públicos estáticos
+    └── favicon.ico
 ```
 
-## 🔧 APIs Utilizadas
+## 🔧 API Externa
 
 ### Financial Modeling Prep API
 - **Descrição**: API profissional para dados financeiros em tempo real
@@ -93,26 +119,20 @@ frontend-gerente-bancario/
 - **Cadastro**: Requer API key gratuita
 - **Site**: https://financialmodelingprep.com/
 - **Endpoints utilizados**:
-  - Cotação de Ações: `https://financialmodelingprep.com/api/v3/quote/{symbol}`
-  - Cotação do Dólar: `https://financialmodelingprep.com/api/v3/fx/USDBRL`
-  - Busca de Ações: `https://financialmodelingprep.com/api/v3/search`
+  - `GET /quote/{symbol}` - Cotação de ações estadunidenses
+  - `GET /fx/USDBRL` - Cotação do dólar
+  - `GET /search` - Busca de símbolos
 
-### Funcionalidades da API
-- **Cotações em Tempo Real**: Preços atualizados de ações americanas
-- **Busca de Símbolos**: Busca por símbolos de ações americanas
-- **Dados de Câmbio**: Cotação USD/BRL
-- **Cache Inteligente**: Sistema de cache de 30 segundos para otimizar requisições
-- **Tratamento de Erros**: Logs detalhados e mensagens de erro amigáveis
-
-### Limitações
-- Suporte apenas para ações americanas (NASDAQ, NYSE)
+### Limitações da API
+- Suporte apenas para ações estadunidenses (NASDAQ, NYSE)
 - Não suporta ações brasileiras (B3)
-- Limite de 150 requisições por dia na versão gratuita
+- Limite de 250 requisições por dia na versão gratuita
 - Dados com delay de 15 minutos na versão gratuita
+- Sistema de cache de 30 segundos para otimizar requisições
 
 ## 📱 Componentes Reutilizáveis
 
-1. **Header**: Cabeçalho com logo e navegação simplificada
+1. **Header**: Cabeçalho com logo e navegação
 2. **LoadingSpinner**: Indicador de carregamento
 3. **ErrorAlert**: Alertas de erro, sucesso e informações
 4. **ConfirmDialog**: Modal de confirmação para ações críticas
@@ -126,10 +146,7 @@ frontend-gerente-bancario/
 - **Layout Responsivo**: Funciona em todos os dispositivos
 - **Navegação Intuitiva**: Navegação clara entre páginas
 - **Validação de Formulários**: Feedback em tempo real
-- **Sistema de Cache**: Evita requisições desnecessárias à API
-- **Busca Manual**: Busca de ações americanas por símbolo (AAPL, MSFT, etc.)
-
-## 🔄 Funcionalidades Implementadas
+- **Busca Manual**: Busca de ações estadunidenses por símbolo
 
 ## 🚀 Como Usar
 
@@ -143,7 +160,7 @@ frontend-gerente-bancario/
 1. Acesse "Investimentos" no menu
 2. Clique em "Novo Investimento"
 3. Selecione uma conta existente
-4. Digite o símbolo da ação americana (ex: AAPL, MSFT, GOOGL)
+4. Digite o símbolo da ação estadunidense (ex: AAPL, MSFT, GOOGL)
 5. Clique em "Buscar" para obter a cotação atual
 6. Ajuste a quantidade e salve o investimento
 
@@ -159,11 +176,10 @@ frontend-gerente-bancario/
 
 ## ⚠️ Limitações Conhecidas
 
-1. **Apenas Ações Americanas**: A API atual suporta apenas ações americanas (NASDAQ, NYSE)
+1. **Apenas Ações estadunidenses**: A API atual suporta apenas ações estadunidenses (NASDAQ, NYSE)
 2. **Não Suporta B3**: Ações brasileiras não são suportadas
-3. **Limite de API**: Versão gratuita possui limite de 150 requisições diárias
+3. **Limite de API**: Versão gratuita possui limite de 250 requisições diárias
 4. **Delay de Dados**: Dados com delay de 15 minutos na versão gratuita
-5. **Cache de 30s**: Sistema de cache evita requisições excessivas
 
 ## 🤝 Contribuição
 
@@ -179,9 +195,9 @@ Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalh
 
 ## 👥 Autor
 Kevin Mailho Coe
----
-Desenvolvido como parte do MVP de Frontend Avançado da PUC-Rio.
 
 ---
+
+Desenvolvido como parte do MVP de Frontend Avançado da PUC-Rio.
 
 **Nota**: Este sistema foi desenvolvido para fins educacionais e demonstra a integração com APIs externas, gerenciamento de estado, componentização e boas práticas de desenvolvimento React/TypeScript.
