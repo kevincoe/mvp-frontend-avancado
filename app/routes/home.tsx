@@ -50,27 +50,44 @@ export default function Home() {
   const [dollarQuote, setDollarQuote] = useState<DollarQuote | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Handle hydration safely
+  useEffect(() => {
+    setIsClient(true);
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (isClient && mounted) {
+      loadData();
+    }
+  }, [isClient, mounted]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Carregar dados locais
-      const accountsData = StorageService.getAccounts();
-      const investmentsData = StorageService.getInvestments();
-      
-      setAccounts(accountsData);
-      setInvestments(investmentsData);
-      
-      // Carregar cotação do dólar
-      const response = await FinanceService.getDollarQuote();
-      if (response.success && response.data) {
-        setDollarQuote(response.data);
+      // Carregar dados locais apenas no cliente
+      if (typeof window !== 'undefined') {
+        const accountsData = StorageService.getAccounts();
+        const investmentsData = StorageService.getInvestments();
+        
+        setAccounts(accountsData);
+        setInvestments(investmentsData);
+        
+        // Carregar cotação do dólar
+        try {
+          const response = await FinanceService.getDollarQuote();
+          if (response.success && response.data) {
+            setDollarQuote(response.data);
+          }
+        } catch (err) {
+          console.log('Erro ao carregar cotação do dólar:', err);
+          // Não definir erro aqui, apenas log
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar dados');
@@ -78,6 +95,33 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  // Prevent hydration mismatch by not rendering dynamic content until mounted
+  if (!mounted) {
+    return (
+      <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
+        <Header />
+        <Container maxWidth="lg" sx={{ py: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+            <LoadingSpinner loading={true} message="Carregando dashboard..." />
+          </Box>
+        </Container>
+      </Box>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
+        <Header />
+        <Container maxWidth="lg" sx={{ py: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+            <LoadingSpinner loading={true} message="Carregando dados..." />
+          </Box>
+        </Container>
+      </Box>
+    );
+  }
 
   const stats = {
     totalAccounts: accounts.length,
@@ -89,17 +133,6 @@ export default function Home() {
 
   const recentAccounts = accounts.slice(0, 5);
   const recentInvestments = investments.slice(0, 5);
-
-  if (loading) {
-    return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <Header />
-        <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <LoadingSpinner loading={true} />
-        </Box>
-      </Box>
-    );
-  }
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>

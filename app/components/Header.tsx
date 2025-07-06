@@ -1,6 +1,4 @@
-// Componente Header reutilizável
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -36,7 +34,13 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle, showMenuButton = false })
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -52,6 +56,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle, showMenuButton = false })
   };
 
   const isCurrentPath = (path: string) => {
+    if (!mounted) return false;
     return location.pathname === path;
   };
 
@@ -60,6 +65,23 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle, showMenuButton = false })
     { label: 'Contas', path: '/accounts', icon: AccountBox },
     { label: 'Investimentos', path: '/investments', icon: TrendingUp },
   ];
+
+  // Don't render dynamic content until mounted
+  if (!mounted) {
+    return (
+      <AppBar position="sticky" elevation={2}>
+        <Toolbar>
+          <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+            <AccountBalance sx={{ mr: 1 }} />
+            <Typography variant="h6" component="div">
+              Gerente Bancário
+            </Typography>
+          </Box>
+          <Box sx={{ flexGrow: 1 }} />
+        </Toolbar>
+      </AppBar>
+    );
+  }
 
   return (
     <AppBar position="sticky" elevation={2}>
@@ -190,17 +212,12 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle, showMenuButton = false })
               </Box>
             )}
 
+            {/* Opções do Usuário */}
             <MenuItem onClick={handleMenuClose}>
               <Settings sx={{ mr: 2 }} />
               Configurações
             </MenuItem>
-            <MenuItem 
-              onClick={() => {
-                handleMenuClose();
-                // Implementar logout se necessário
-                console.log('Logout');
-              }}
-            >
+            <MenuItem onClick={handleMenuClose}>
               <Logout sx={{ mr: 2 }} />
               Sair
             </MenuItem>

@@ -56,7 +56,7 @@ interface FormData {
   name: string;
   type: 'STOCK' | 'FUND' | 'BOND' | 'CRYPTO';
   quantity: number;
-  purchasePrice: number;
+  purchasePrice: number; // This will be auto-calculated
   purchaseDate: Date;
 }
 
@@ -99,6 +99,16 @@ export default function EditInvestment() {
       loadInvestment();
     }
   }, [id]);
+
+  // Auto-calculate purchase price when quantity or quote changes
+  useEffect(() => {
+    if (quote && formData.quantity > 0) {
+      setFormData(prev => ({
+        ...prev,
+        purchasePrice: quote.price,
+      }));
+    }
+  }, [quote, formData.quantity]);
 
   const loadInvestment = async () => {
     try {
@@ -151,6 +161,8 @@ export default function EditInvestment() {
         setFormData(prev => ({
           ...prev,
           name: result.data!.name || symbol,
+          // Auto-update purchase price if quantity is already set
+          purchasePrice: prev.quantity > 0 ? result.data!.price : prev.purchasePrice,
         }));
       } else {
         setQuote(null);
@@ -246,10 +258,19 @@ export default function EditInvestment() {
   };
 
   const handleInputChange = (field: keyof FormData, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [field]: value,
+      };
+
+      // Auto-calculate purchase price when quantity changes and we have a quote
+      if (field === 'quantity' && quote && value > 0) {
+        newData.purchasePrice = quote.price;
+      }
+
+      return newData;
+    });
     
     // Limpar erro do campo
     if (errors[field]) {
@@ -380,34 +401,40 @@ export default function EditInvestment() {
                         </Select>
                       </FormControl>
 
-                      {/* Quantidade e Preço */}
-                      <Box sx={{ display: 'flex', gap: 2 }}>
-                        <TextField
-                          label="Quantidade"
-                          type="number"
-                          value={formData.quantity}
-                          onChange={(e) => handleInputChange('quantity', parseFloat(e.target.value) || 0)}
-                          error={!!errors.quantity}
-                          helperText={errors.quantity}
-                          inputProps={{ min: 0, step: 1 }}
-                          required
-                          fullWidth
-                        />
-                        <TextField
-                          label="Preço de Compra"
-                          type="number"
-                          value={formData.purchasePrice}
-                          onChange={(e) => handleInputChange('purchasePrice', parseFloat(e.target.value) || 0)}
-                          error={!!errors.purchasePrice}
-                          helperText={errors.purchasePrice}
-                          inputProps={{ min: 0, step: 0.01 }}
-                          InputProps={{
-                            startAdornment: <Typography color="text.secondary">R$</Typography>,
-                          }}
-                          required
-                          fullWidth
-                        />
-                      </Box>
+                      {/* Quantidade */}
+                      <TextField
+                        label="Quantidade"
+                        type="number"
+                        value={formData.quantity}
+                        onChange={(e) => handleInputChange('quantity', parseFloat(e.target.value) || 0)}
+                        error={!!errors.quantity}
+                        helperText={errors.quantity || 'O preço será calculado automaticamente com base na cotação atual'}
+                        inputProps={{ min: 0, step: 1 }}
+                        required
+                        fullWidth
+                      />
+
+                      {/* Preço de Compra (Read-only, auto-calculated) */}
+                      <TextField
+                        label="Preço de Compra (Calculado Automaticamente)"
+                        type="number"
+                        value={formData.purchasePrice}
+                        InputProps={{
+                          readOnly: true,
+                          startAdornment: <Typography color="text.secondary">R$</Typography>,
+                        }}
+                        helperText={
+                          quote 
+                            ? `Baseado na cotação atual: ${formatters.currency(quote.price)}`
+                            : 'Busque o símbolo para obter a cotação atual'
+                        }
+                        fullWidth
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            backgroundColor: 'action.hover',
+                          },
+                        }}
+                      />
 
                       {/* Data de Compra */}
                       <DatePicker
@@ -423,6 +450,19 @@ export default function EditInvestment() {
                           },
                         }}
                       />
+
+                      {/* Informação sobre o cálculo */}
+                      {quote && formData.quantity > 0 && (
+                        <Alert severity="info">
+                          <Typography variant="body2">
+                            <strong>Cálculo automático:</strong>
+                          </Typography>
+                          <Typography variant="body2">
+                            Quantidade: {formData.quantity} × Preço atual: {formatters.currency(quote.price)} = 
+                            <strong> {formatters.currency(totalValue)}</strong>
+                          </Typography>
+                        </Alert>
+                      )}
                     </Stack>
                   </CardContent>
                 </Card>
@@ -442,7 +482,7 @@ export default function EditInvestment() {
                       <Stack spacing={2}>
                         <Box>
                           <Typography variant="body2" color="text.secondary">
-                            Valor Investido
+                            Valor Total do Investimento
                           </Typography>
                           <Typography variant="h6">
                             {formatters.currency(totalValue)}
@@ -453,7 +493,7 @@ export default function EditInvestment() {
                           <>
                             <Box>
                               <Typography variant="body2" color="text.secondary">
-                                Valor Atual
+                                Valor na Cotação Atual
                               </Typography>
                               <Typography variant="h6">
                                 {formatters.currency(currentValue)}
@@ -462,7 +502,7 @@ export default function EditInvestment() {
                             
                             <Box>
                               <Typography variant="body2" color="text.secondary">
-                                Retorno Potencial
+                                Diferença (Baseado na Cotação)
                               </Typography>
                               <Typography 
                                 variant="h6"
