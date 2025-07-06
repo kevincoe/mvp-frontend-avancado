@@ -1,3 +1,7 @@
+export async function loader() {
+  return null;
+}
+
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import {

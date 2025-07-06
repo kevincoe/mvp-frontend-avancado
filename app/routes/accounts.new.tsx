@@ -1,4 +1,8 @@
-import React, { useState } from 'react';
+export async function loader() {
+  return null;
+}
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Box,

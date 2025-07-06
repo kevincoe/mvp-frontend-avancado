@@ -16,7 +16,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Alert,
   Stack,
 } from '@mui/material';
@@ -24,18 +23,21 @@ import {
   AccountBalance,
   TrendingUp,
   AttachMoney,
-  Group,
   Add,
   Visibility,
 } from '@mui/icons-material';
 import Header from '../components/Header';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
-import CustomButton from '../components/CustomButton';
 import { StorageService } from '../services/storage';
 import { FinanceService } from '../services/finance';
 import { formatters } from '../utils/formatters';
 import type { BankAccount, Investment, DollarQuote } from '../types';
+
+export async function loader() {
+  // Loader vazio para satisfazer o React Router v7
+  return null;
+}
 
 export function meta() {
   return [
@@ -50,44 +52,31 @@ export default function Home() {
   const [dollarQuote, setDollarQuote] = useState<DollarQuote | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isClient, setIsClient] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
-  // Handle hydration safely
   useEffect(() => {
-    setIsClient(true);
-    setMounted(true);
+    loadData();
   }, []);
-
-  useEffect(() => {
-    if (isClient && mounted) {
-      loadData();
-    }
-  }, [isClient, mounted]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Carregar dados locais apenas no cliente
-      if (typeof window !== 'undefined') {
-        const accountsData = StorageService.getAccounts();
-        const investmentsData = StorageService.getInvestments();
-        
-        setAccounts(accountsData);
-        setInvestments(investmentsData);
-        
-        // Carregar cotação do dólar
-        try {
-          const response = await FinanceService.getDollarQuote();
-          if (response.success && response.data) {
-            setDollarQuote(response.data);
-          }
-        } catch (err) {
-          console.log('Erro ao carregar cotação do dólar:', err);
-          // Não definir erro aqui, apenas log
+      // Carregar dados locais
+      const accountsData = StorageService.getAccounts();
+      const investmentsData = StorageService.getInvestments();
+      
+      setAccounts(accountsData);
+      setInvestments(investmentsData);
+      
+      // Carregar cotação do dólar
+      try {
+        const response = await FinanceService.getDollarQuote();
+        if (response.success && response.data) {
+          setDollarQuote(response.data);
         }
+      } catch (err) {
+        console.log('Erro ao carregar cotação do dólar:', err);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar dados');
@@ -95,33 +84,6 @@ export default function Home() {
       setLoading(false);
     }
   };
-
-  // Prevent hydration mismatch by not rendering dynamic content until mounted
-  if (!mounted) {
-    return (
-      <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
-        <Header />
-        <Container maxWidth="lg" sx={{ py: 4 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-            <LoadingSpinner loading={true} message="Carregando dashboard..." />
-          </Box>
-        </Container>
-      </Box>
-    );
-  }
-
-  if (loading) {
-    return (
-      <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
-        <Header />
-        <Container maxWidth="lg" sx={{ py: 4 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-            <LoadingSpinner loading={true} message="Carregando dados..." />
-          </Box>
-        </Container>
-      </Box>
-    );
-  }
 
   const stats = {
     totalAccounts: accounts.length,
@@ -133,6 +95,19 @@ export default function Home() {
 
   const recentAccounts = accounts.slice(0, 5);
   const recentInvestments = investments.slice(0, 5);
+
+  if (loading) {
+    return (
+      <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
+        <Header />
+        <Container maxWidth="lg" sx={{ py: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+            <LoadingSpinner loading={true} />
+          </Box>
+        </Container>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>

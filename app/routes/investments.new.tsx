@@ -16,7 +16,7 @@ import {
   Alert,
   Stack,
   Divider,
-  Autocomplete,
+  CircularProgress,
 } from '@mui/material';
 import {
   Save,
@@ -29,7 +29,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
 import { StorageService } from '../services/storage';
 import { FinanceService } from '../services/finance';
-import { formatters, validators } from '../utils/formatters';
+import { formatters } from '../utils/formatters';
 import type { Investment, BankAccount, StockQuote } from '../types';
 
 export function meta() {
@@ -57,26 +57,13 @@ interface FormErrors {
   purchasePrice?: string;
 }
 
-// Símbolos populares para sugestão
-const popularSymbols = [
-  { symbol: 'PETR4', name: 'Petrobras PN' },
-  { symbol: 'VALE3', name: 'Vale ON' },
-  { symbol: 'ITUB4', name: 'Itaú Unibanco PN' },
-  { symbol: 'BBDC4', name: 'Bradesco PN' },
-  { symbol: 'ABEV3', name: 'Ambev ON' },
-  { symbol: 'MGLU3', name: 'Magazine Luiza ON' },
-  { symbol: 'WEGE3', name: 'WEG ON' },
-  { symbol: 'AAPL', name: 'Apple Inc.' },
-  { symbol: 'MSFT', name: 'Microsoft Corporation' },
-  { symbol: 'GOOGL', name: 'Alphabet Inc.' },
-];
-
 export default function NewInvestment() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [searchingStock, setSearchingStock] = useState(false);
+  const [currentQuote, setCurrentQuote] = useState<StockQuote | null>(null);
   const [formData, setFormData] = useState<FormData>({
     accountId: '',
     symbol: '',
@@ -86,6 +73,15 @@ export default function NewInvestment() {
     purchasePrice: '0',
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [alertState, setAlertState] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info';
+  }>({
+    open: false,
+    message: '',
+    severity: 'info',
+  });
 
   useEffect(() => {
     loadAccounts();
@@ -117,48 +113,61 @@ export default function NewInvestment() {
   };
 
   const searchStock = async (symbol: string) => {
-    if (!symbol.trim()) return;
+    if (!symbol.trim()) {
+      setCurrentQuote(null);
+      return;
+    }
 
     try {
       setSearchingStock(true);
+      setCurrentQuote(null);
       
-      // Primeiro verificar se é um símbolo popular
-      const popularStock = popularSymbols.find(
-        stock => stock.symbol.toLowerCase() === symbol.toLowerCase()
-      );
+      console.log('🔍 Buscando cotação para:', symbol);
       
-      if (popularStock) {
+      // Buscar cotação via API
+      const response = await FinanceService.getStockQuote(symbol);
+      
+      if (response.success && response.data) {
+        console.log('✅ Cotação obtida:', response.data);
+        
+        setCurrentQuote(response.data);
         setFormData(prev => ({
           ...prev,
-          name: popularStock.name,
-          type: symbol.includes('3') || symbol.includes('4') ? 'STOCK' : 'STOCK',
-        }));
-        return;
-      }
-
-      // Tentar buscar cotação real (pode falhar se API não estiver disponível)
-      try {
-        const response = await FinanceService.getStockQuote(symbol);
-        if (response.success && response.data) {
-          setFormData(prev => ({
-            ...prev,
-            name: response.data!.name || symbol,
-            purchasePrice: response.data!.price.toString(),
-            type: 'STOCK',
-          }));
-        }
-      } catch {
-        // Se falhar, usar dados padrão
-        setFormData(prev => ({
-          ...prev,
-          name: symbol,
+          name: response.data!.name || symbol.toUpperCase(),
           type: 'STOCK',
+          purchasePrice: response.data!.price.toString(),
         }));
+
+        setAlertState({
+          open: true,
+          message: `Cotação obtida: ${response.data.symbol} - ${formatters.currency(response.data.price)}`,
+          severity: 'success',
+        });
+      } else {
+        console.log('❌ Erro na API:', response.error);
+        
+        setAlertState({
+          open: true,
+          message: `Não foi possível obter a cotação para "${symbol}". Verifique se o símbolo está correto e disponível na bolsa americana.`,
+          severity: 'error',
+        });
       }
     } catch (err) {
-      console.warn('Erro ao buscar ação:', err);
+      console.error('❌ Erro ao buscar ação:', err);
+      
+      setAlertState({
+        open: true,
+        message: 'Erro ao buscar cotação. Verifique o símbolo e tente novamente.',
+        severity: 'error',
+      });
     } finally {
       setSearchingStock(false);
+    }
+  };
+
+  const handleSearchClick = () => {
+    if (formData.symbol.trim()) {
+      searchStock(formData.symbol);
     }
   };
 
@@ -235,10 +244,11 @@ export default function NewInvestment() {
     navigate('/investments');
   };
 
-  const handleSymbolSelect = (symbol: string) => {
-    setFormData(prev => ({ ...prev, symbol }));
-    searchStock(symbol);
+  const handleCloseAlert = () => {
+    setAlertState(prev => ({ ...prev, open: false }));
   };
+
+  const totalValue = parseFloat(formData.quantity) * parseFloat(formData.purchasePrice) || 0;
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
@@ -262,206 +272,297 @@ export default function NewInvestment() {
           </Box>
         )}
 
-        <Card>
-          <form onSubmit={handleSubmit}>
-            <CardContent>
-              <Stack spacing={3}>
-                {/* Seleção de Conta */}
-                <Box>
-                  <Typography variant="h6" gutterBottom>
-                    Conta do Cliente
-                  </Typography>
-                  <Divider sx={{ mb: 2 }} />
-                  
-                  <FormControl fullWidth error={!!errors.accountId} required>
-                    <InputLabel>Selecionar Conta</InputLabel>
-                    <Select
-                      value={formData.accountId}
-                      onChange={(e) => handleChange('accountId', e.target.value)}
-                      label="Selecionar Conta"
-                    >
-                      {accounts.map((account) => (
-                        <MenuItem key={account.id} value={account.id}>
-                          {account.customerName} - {account.accountNumber} ({formatters.currency(account.balance)})
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {errors.accountId && (
-                      <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>
-                        {errors.accountId}
+        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+          {/* Formulário Principal */}
+          <Box sx={{ flex: '1 1 600px', minWidth: '300px' }}>
+            <Card>
+              <form onSubmit={handleSubmit}>
+                <CardContent>
+                  <Stack spacing={3}>
+                    {/* Seleção de Conta */}
+                    <Box>
+                      <Typography variant="h6" gutterBottom>
+                        Conta do Cliente
                       </Typography>
-                    )}
-                  </FormControl>
-                </Box>
-
-                {/* Dados do Investimento */}
-                <Box>
-                  <Typography variant="h6" gutterBottom>
-                    Dados do Investimento
-                  </Typography>
-                  <Divider sx={{ mb: 2 }} />
-                  
-                  <Stack spacing={2}>
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
-                      <Autocomplete
-                        freeSolo
-                        options={popularSymbols.map(stock => stock.symbol)}
-                        value={formData.symbol}
-                        onInputChange={(event, newValue) => {
-                          handleChange('symbol', newValue || '');
-                        }}
-                        onChange={(event, newValue) => {
-                          if (newValue) {
-                            handleSymbolSelect(newValue);
-                          }
-                        }}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label="Símbolo"
-                            error={!!errors.symbol}
-                            helperText={errors.symbol || 'Ex: PETR4, AAPL, VALE3'}
-                            required
-                            sx={{ flexGrow: 1 }}
-                          />
-                        )}
-                      />
-                      <Button
-                        variant="outlined"
-                        onClick={() => searchStock(formData.symbol)}
-                        disabled={!formData.symbol || searchingStock}
-                        startIcon={searchingStock ? <LoadingSpinner loading={true} /> : <Search />}
-                      >
-                        Buscar
-                      </Button>
-                    </Box>
-
-                    <TextField
-                      fullWidth
-                      label="Nome do Investimento"
-                      value={formData.name}
-                      onChange={(e) => handleChange('name', e.target.value)}
-                      error={!!errors.name}
-                      helperText={errors.name}
-                      required
-                    />
-
-                    <Box sx={{ 
-                      display: 'grid', 
-                      gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
-                      gap: 2
-                    }}>
-                      <FormControl fullWidth error={!!errors.type} required>
-                        <InputLabel>Tipo</InputLabel>
+                      <Divider sx={{ mb: 2 }} />
+                      
+                      <FormControl fullWidth error={!!errors.accountId} required>
+                        <InputLabel>Selecionar Conta</InputLabel>
                         <Select
-                          value={formData.type}
-                          onChange={(e) => handleChange('type', e.target.value)}
-                          label="Tipo"
+                          value={formData.accountId}
+                          onChange={(e) => handleChange('accountId', e.target.value)}
+                          label="Selecionar Conta"
                         >
-                          <MenuItem value="STOCK">Ação</MenuItem>
-                          <MenuItem value="FUND">Fundo</MenuItem>
-                          <MenuItem value="BOND">Título</MenuItem>
-                          <MenuItem value="CRYPTO">Criptomoeda</MenuItem>
+                          {accounts.map((account) => (
+                            <MenuItem key={account.id} value={account.id}>
+                              {account.customerName} - {account.accountNumber} ({formatters.currency(account.balance)})
+                            </MenuItem>
+                          ))}
                         </Select>
-                        {errors.type && (
+                        {errors.accountId && (
                           <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>
-                            {errors.type}
+                            {errors.accountId}
                           </Typography>
                         )}
                       </FormControl>
-
-                      <TextField
-                        fullWidth
-                        label="Quantidade"
-                        type="number"
-                        value={formData.quantity}
-                        onChange={(e) => handleChange('quantity', e.target.value)}
-                        error={!!errors.quantity}
-                        helperText={errors.quantity}
-                        inputProps={{
-                          min: 0.01,
-                          step: 0.01
-                        }}
-                        required
-                      />
-
-                      <TextField
-                        fullWidth
-                        label="Preço de Compra"
-                        type="number"
-                        value={formData.purchasePrice}
-                        onChange={(e) => handleChange('purchasePrice', e.target.value)}
-                        error={!!errors.purchasePrice}
-                        helperText={errors.purchasePrice}
-                        inputProps={{
-                          min: 0.01,
-                          step: 0.01
-                        }}
-                        required
-                      />
                     </Box>
+
+                    {/* Dados do Investimento */}
+                    <Box>
+                      <Typography variant="h6" gutterBottom>
+                        Dados do Investimento
+                      </Typography>
+                      <Divider sx={{ mb: 2 }} />
+                      
+                      <Stack spacing={2}>
+                        {/* Símbolo com busca manual */}
+                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
+                          <TextField
+                            label="Símbolo"
+                            value={formData.symbol}
+                            onChange={(e) => handleChange('symbol', e.target.value.toUpperCase())}
+                            error={!!errors.symbol}
+                            helperText={errors.symbol || 'Digite o símbolo (ex: AAPL, MSFT, GOOGL)'}
+                            required
+                            sx={{ flexGrow: 1 }}
+                            placeholder="Ex: AAPL"
+                          />
+                          <Button
+                            variant="outlined"
+                            onClick={handleSearchClick}
+                            disabled={!formData.symbol || searchingStock}
+                            startIcon={searchingStock ? <CircularProgress size={20} /> : <Search />}
+                          >
+                            {searchingStock ? 'Buscando...' : 'Buscar'}
+                          </Button>
+                        </Box>
+
+                        {/* Cotação Atual */}
+                        {currentQuote && (
+                          <Alert severity="success" sx={{ mb: 2 }}>
+                            <Box>
+                              <Typography variant="body2">
+                                <strong>Cotação Atual:</strong> {currentQuote.symbol} - {formatters.currency(currentQuote.price)}
+                              </Typography>
+                              <Typography variant="body2">
+                                <strong>Nome:</strong> {currentQuote.name}
+                              </Typography>
+                              <Typography variant="body2">
+                                <strong>Variação:</strong> {currentQuote.change >= 0 ? '+' : ''}{formatters.currency(currentQuote.change)} 
+                                ({currentQuote.changePercent >= 0 ? '+' : ''}{currentQuote.changePercent.toFixed(2)}%)
+                              </Typography>
+                            </Box>
+                          </Alert>
+                        )}
+
+                        <TextField
+                          fullWidth
+                          label="Nome do Investimento"
+                          value={formData.name}
+                          onChange={(e) => handleChange('name', e.target.value)}
+                          error={!!errors.name}
+                          helperText={errors.name || 'Nome será preenchido automaticamente após busca'}
+                          required
+                        />
+
+                        <Box sx={{ 
+                          display: 'grid', 
+                          gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
+                          gap: 2
+                        }}>
+                          <FormControl fullWidth error={!!errors.type} required>
+                            <InputLabel>Tipo</InputLabel>
+                            <Select
+                              value={formData.type}
+                              onChange={(e) => handleChange('type', e.target.value)}
+                              label="Tipo"
+                            >
+                              <MenuItem value="STOCK">Ação</MenuItem>
+                              <MenuItem value="FUND">Fundo</MenuItem>
+                              <MenuItem value="BOND">Título</MenuItem>
+                              <MenuItem value="CRYPTO">Criptomoeda</MenuItem>
+                            </Select>
+                            {errors.type && (
+                              <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>
+                                {errors.type}
+                              </Typography>
+                            )}
+                          </FormControl>
+
+                          <TextField
+                            fullWidth
+                            label="Quantidade"
+                            type="number"
+                            value={formData.quantity}
+                            onChange={(e) => handleChange('quantity', e.target.value)}
+                            error={!!errors.quantity}
+                            helperText={errors.quantity}
+                            inputProps={{
+                              min: 0.01,
+                              step: 0.01
+                            }}
+                            required
+                          />
+
+                          <TextField
+                            fullWidth
+                            label="Preço de Compra"
+                            type="number"
+                            value={formData.purchasePrice}
+                            onChange={(e) => handleChange('purchasePrice', e.target.value)}
+                            error={!!errors.purchasePrice}
+                            helperText={errors.purchasePrice || 'Preço será preenchido automaticamente'}
+                            inputProps={{
+                              min: 0.01,
+                              step: 0.01
+                            }}
+                            required
+                          />
+                        </Box>
+                      </Stack>
+                    </Box>
+
+                    {/* Resumo */}
+                    {totalValue > 0 && (
+                      <Alert severity="info">
+                        <Typography variant="body2">
+                          <strong>Valor Total do Investimento:</strong> {formatters.currency(totalValue)}
+                        </Typography>
+                        <Typography variant="body2">
+                          {formData.quantity} × {formatters.currency(parseFloat(formData.purchasePrice))}
+                        </Typography>
+                      </Alert>
+                    )}
                   </Stack>
-                </Box>
+                </CardContent>
 
-                {/* Símbolos Populares */}
-                <Box>
+                <CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
+                  <Stack direction="row" spacing={2}>
+                    <Button
+                      variant="outlined"
+                      onClick={handleCancel}
+                      startIcon={<Cancel />}
+                      disabled={loading}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      startIcon={loading ? <CircularProgress size={20} /> : <Save />}
+                      disabled={loading}
+                    >
+                      {loading ? 'Salvando...' : 'Salvar Investimento'}
+                    </Button>
+                  </Stack>
+                </CardActions>
+              </form>
+            </Card>
+          </Box>
+
+          {/* Painel Lateral - Informações */}
+          <Box sx={{ flex: '1 1 300px', minWidth: '300px' }}>
+            <Stack spacing={3}>
+              {/* Status da API */}
+              <Card>
+                <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    Símbolos Populares
+                    Status da API
                   </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {popularSymbols.slice(0, 8).map((stock) => (
-                      <Button
-                        key={stock.symbol}
-                        variant="outlined"
-                        size="small"
-                        onClick={() => handleSymbolSelect(stock.symbol)}
-                      >
-                        {stock.symbol}
-                      </Button>
-                    ))}
-                  </Box>
-                </Box>
+                  <Divider sx={{ mb: 2 }} />
+                  
+                  <Stack spacing={1}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box 
+                        sx={{ 
+                          width: 8, 
+                          height: 8, 
+                          borderRadius: '50%', 
+                          bgcolor: searchingStock ? 'warning.main' : 'success.main' 
+                        }} 
+                      />
+                      <Typography variant="body2">
+                        {searchingStock ? 'Consultando...' : 'Pronto'}
+                      </Typography>
+                    </Box>
+                    
+                    {currentQuote && (
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          Última consulta: {currentQuote.symbol}
+                        </Typography>
+                        <Typography variant="body2">
+                          {formatters.currency(currentQuote.price)}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Stack>
+                </CardContent>
+              </Card>
 
-                {/* Informações Adicionais */}
-                <Alert severity="info">
-                  <Typography variant="body2">
-                    <strong>Informações:</strong>
+              {/* Instruções */}
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Como Usar
                   </Typography>
-                  <Typography variant="body2">
-                    • Use a busca para encontrar informações atualizadas do investimento
-                  </Typography>
-                  <Typography variant="body2">
-                    • O preço atual será igual ao preço de compra inicialmente
-                  </Typography>
-                  <Typography variant="body2">
-                    • Todos os campos marcados com * são obrigatórios
-                  </Typography>
-                </Alert>
-              </Stack>
-            </CardContent>
+                  <Divider sx={{ mb: 2 }} />
+                  
+                  <Stack spacing={1}>
+                    <Typography variant="body2">
+                      <strong>1.</strong> Digite o símbolo da ação americana (ex: AAPL, MSFT, GOOGL)
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>2.</strong> Clique em "Buscar" para obter a cotação atual
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>3.</strong> Os campos Nome e Preço serão preenchidos automaticamente
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>4.</strong> Ajuste a quantidade e salve o investimento
+                    </Typography>
+                  </Stack>
+                </CardContent>
+              </Card>
 
-            <CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
-              <Stack direction="row" spacing={2}>
-                <Button
-                  variant="outlined"
-                  onClick={handleCancel}
-                  startIcon={<Cancel />}
-                  disabled={loading}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  startIcon={loading ? <LoadingSpinner loading={true} /> : <Save />}
-                  disabled={loading}
-                >
-                  {loading ? 'Salvando...' : 'Salvar Investimento'}
-                </Button>
-              </Stack>
-            </CardActions>
-          </form>
-        </Card>
+              {/* Exemplos */}
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Exemplos de Símbolos
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+                  
+                  <Stack spacing={1}>
+                    <Typography variant="body2">
+                      <strong>AAPL</strong> - Apple Inc.
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>MSFT</strong> - Microsoft Corporation
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>GOOGL</strong> - Alphabet Inc.
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>AMZN</strong> - Amazon.com Inc.
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>TSLA</strong> - Tesla Inc.
+                    </Typography>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Stack>
+          </Box>
+        </Box>
+
+        {/* Alert de Status */}
+        <ErrorAlert
+          open={alertState.open}
+          message={alertState.message}
+          severity={alertState.severity}
+          onClose={handleCloseAlert}
+        />
       </Container>
     </Box>
   );

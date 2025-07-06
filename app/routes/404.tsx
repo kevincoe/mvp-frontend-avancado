@@ -23,6 +23,10 @@ export function meta() {
   ];
 }
 
+export async function loader() {
+  return null;
+}
+
 export default function NotFound() {
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
