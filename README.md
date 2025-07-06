@@ -56,7 +56,7 @@ npm run build
 npm start
 ```
 
-## � Estrutura do Projeto
+## 📁Estrutura do Projeto
 
 ```
 frontend-gerente-bancario/
@@ -129,7 +129,7 @@ frontend-gerente-bancario/
 - **Sistema de Cache**: Evita requisições desnecessárias à API
 - **Busca Manual**: Busca de ações americanas por símbolo (AAPL, MSFT, etc.)
 
-### 🔄 Funcionalidades Implementadas
+## 🔄 Funcionalidades Implementadas
 
 ## 🚀 Como Usar
 
