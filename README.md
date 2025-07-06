@@ -161,7 +161,7 @@ frontend-gerente-bancario/
 
 1. **Apenas Ações Americanas**: A API atual suporta apenas ações americanas (NASDAQ, NYSE)
 2. **Não Suporta B3**: Ações brasileiras não são suportadas
-3. **Limite de API**: Versão gratuita possui limite de requisições diárias
+3. **Limite de API**: Versão gratuita possui limite de 150 requisições diárias
 4. **Delay de Dados**: Dados com delay de 15 minutos na versão gratuita
 5. **Cache de 30s**: Sistema de cache evita requisições excessivas
 
@@ -179,6 +179,7 @@ Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalh
 
 ## 👥 Autor
 Kevin Mailho Coe
+---
 Desenvolvido como parte do MVP de Frontend Avançado da PUC-Rio.
 
 ---
