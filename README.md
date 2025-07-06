@@ -1,52 +1,169 @@
-# Welcome to React Router!
+# Sistema de Gerenciamento Bancário
 
-A modern, production-ready template for building full-stack React applications using React Router.
+Um sistema completo de gerenciamento bancário para gerentes, desenvolvido com React, TypeScript, Material-UI e React Router. O sistema permite o gerenciamento de contas bancárias e investimentos de clientes, com integração a APIs externas para cotações financeiras.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+## 📋 Características
 
-## Features
+### Funcionalidades Principais
+- **Gestão de Contas Bancárias**: Criar, editar, visualizar e excluir contas bancárias
+- **Gestão de Investimentos**: Gerenciar carteiras de investimentos dos clientes
+- **Cotações em Tempo Real**: Integração com APIs externas para cotações de ações e dólar
+- **Dashboard Analítico**: Visão geral dos dados financeiros
+- **Responsive Design**: Interface adaptável para desktop, tablet e mobile
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+### Tecnologias Utilizadas
+- **Frontend**: React 19, TypeScript, Material-UI v7
+- **Roteamento**: React Router v7
+- **Estilização**: Material-UI + Emotion
+- **Validação**: Validação nativa de formulários
+- **Armazenamento**: localStorage para persistência local
+- **HTTP Client**: Axios para requisições à API
+- **API Externa**: Yahoo Finance para cotações financeiras
 
-## Getting Started
+## 🚀 Instalação e Execução
 
-### Installation
+### Pré-requisitos
+- Node.js (versão 18 ou superior)
+- npm ou yarn
 
-Install the dependencies:
-
+### Instalação
 ```bash
+# Clone o repositório
+git clone <seu-repositorio>
+
+# Navegue para o diretório
+cd frontend-gerente-bancario
+
+# Instale as dependências
 npm install
 ```
 
-### Development
-
-Start the development server with HMR:
-
+### Execução em Desenvolvimento
 ```bash
+# Inicie o servidor de desenvolvimento
 npm run dev
 ```
 
-Your application will be available at `http://localhost:5173`.
+A aplicação estará disponível em `http://localhost:5173`
 
-## Building for Production
-
-Create a production build:
-
+### Build para Produção
 ```bash
+# Gere o build de produção
 npm run build
+
+# Execute a aplicação em produção
+npm start
 ```
 
-## Deployment
+## � Estrutura do Projeto
 
-### Docker Deployment
+```
+frontend-gerente-bancario/
+├── app/
+│   ├── components/          # Componentes reutilizáveis
+│   │   ├── Header.tsx
+│   │   ├── LoadingSpinner.tsx
+│   │   ├── ErrorAlert.tsx
+│   │   ├── ConfirmDialog.tsx
+│   │   └── ...
+│   ├── routes/             # Páginas/rotas da aplicação
+│   │   ├── home.tsx        # Dashboard principal
+│   │   ├── accounts.tsx    # Gestão de contas
+│   │   ├── investments.tsx # Gestão de investimentos
+│   │   └── ...
+│   ├── services/           # Serviços e APIs
+│   │   ├── api.ts
+│   │   ├── storage.ts
+│   │   └── finance.ts
+│   ├── types/              # Definições de tipos TypeScript
+│   │   └── index.ts
+│   ├── utils/              # Utilitários
+│   │   └── formatters.ts
+│   └── root.tsx            # Root da aplicação
+├── public/                 # Arquivos públicos
+└── ...
+```
 
-To build and run using Docker:
+## 🔧 APIs Utilizadas
+
+### Yahoo Finance API (Gratuita)
+- **Descrição**: API para cotações de ações e câmbio
+- **Licença**: Gratuita para uso pessoal
+- **Cadastro**: Não requer cadastro
+- **Endpoints utilizados**:
+  - Cotação do Dólar: `https://query1.finance.yahoo.com/v8/finance/chart/USDBRL=X`
+  - Cotações de Ações: `https://query1.finance.yahoo.com/v8/finance/chart/{symbol}`
+
+### Alpha Vantage API (Alternativa)
+- **Descrição**: API financeira com dados de mercado
+- **Licença**: Gratuita com limitações
+- **Cadastro**: Requer API key gratuita
+- **Site**: https://www.alphavantage.co/
+
+## 📱 Componentes Reutilizáveis
+
+1. **Header**: Cabeçalho com logo e navegação
+2. **LoadingSpinner**: Indicador de carregamento
+3. **ErrorAlert**: Alertas de erro e sucesso
+4. **ConfirmDialog**: Modal de confirmação
+5. **SearchField**: Campo de busca reutilizável
+6. **AccountCard**: Card para exibir dados de conta
+7. **InvestmentCard**: Card para exibir investimentos
+8. **CustomButton**: Botão personalizado com animações
+
+## 🎨 Features de Usabilidade
+
+- **Feedback Visual**: Indicadores de carregamento, sucesso e erro
+- **Tooltips**: Explicações rápidas sobre funcionalidades
+- **Mensagens Condicionais**: "Nenhum item encontrado", "Erro ao carregar"
+- **Layout Responsivo**: Funciona em todos os dispositivos
+- **Navegação Intuitiva**: Breadcrumbs e navegação clara
+- **Validação de Formulários**: Feedback em tempo real
+
+## 🔄 Funcionalidades Implementadas
+
+### Componentização (3,5 pts)
+- ✅ 3 páginas principais com componentes reutilizáveis
+- ✅ Formulários com validação e localStorage
+- ✅ 8+ componentes reutilizáveis
+- ✅ Interfaces e soluções originais
+
+### React e Roteamento (2,0 pts)
+- ✅ Uso correto de useState, useEffect, useParams, useLocation, useNavigate
+- ✅ Navegação entre páginas com React Router
+- ✅ Rota 404 para URLs inexistentes
+
+### Comunicação com API (1,0 pt)
+- ✅ Consumo de API externa (Yahoo Finance)
+- ✅ Tratamento de erros e loading
+- ✅ Exibição de mensagens amigáveis
+
+### Usabilidade (1,5 pt)
+- ✅ Feedback visual completo
+- ✅ Layout responsivo
+- ✅ Tooltips e mensagens condicionais
+
+### Organização e Documentação (2,0 pts)
+- ✅ Projeto no GitHub
+- ✅ README.md completo
+- ✅ Estrutura de pastas organizada
+- ✅ Boas práticas de nomenclatura
+
+## 🤝 Contribuição
+
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
+
+## 👥 Autor
+
+Desenvolvido como parte do MVP de Frontend Avançado da PUC-Rio.
 
 ```bash
 docker build -t my-app .
