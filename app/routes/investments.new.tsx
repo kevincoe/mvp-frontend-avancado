@@ -215,6 +215,8 @@ export default function NewInvestment() {
       setLoading(true);
       setError(null);
 
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simula um delay para a operação
+
       const newInvestment: Investment = {
         id: crypto.randomUUID(),
         accountId: formData.accountId,

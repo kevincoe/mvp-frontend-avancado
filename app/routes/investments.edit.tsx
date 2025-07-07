@@ -314,7 +314,7 @@ export default function EditInvestment() {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
-      <Box>
+      <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
         <Header />
         <Container maxWidth="lg" sx={{ py: 4 }}>
           {/* Breadcrumbs */}
