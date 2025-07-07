@@ -348,11 +348,6 @@ export const constants = {
         SETTINGS: 'banking_settings',
     },
 
-    API_ENDPOINTS: {
-        YAHOO_FINANCE: 'https://query1.finance.yahoo.com/v8/finance/chart',
-        ALPHA_VANTAGE: 'https://www.alphavantage.co/query',
-    },
-
     REGEX_PATTERNS: {
         CPF: /^\d{3}\.\d{3}\.\d{3}-\d{2}$/,
         PHONE: /^\(\d{2}\) \d{4,5}-\d{4}$/,
