@@ -21,6 +21,7 @@ import {
   Alert,
   Stack,
   Divider,
+  CircularProgress,
 } from '@mui/material';
 import {
   Save,
@@ -146,6 +147,9 @@ export default function NewAccount() {
       setLoading(true);
       setError(null);
 
+      // Simular delay para mostrar o loading
+      await new Promise(resolve => setTimeout(resolve, 1200));
+
       // Verificar se CPF já existe
       const existingAccounts = StorageService.getAccounts();
       const cpfExists = existingAccounts.some(acc => acc.customerCpf === formData.customerCpf);
@@ -206,7 +210,17 @@ export default function NewAccount() {
           </Box>
         )}
 
-        <Card>
+        <Card sx={{ position: 'relative' }}>
+          {/* Loading Overlay */}
+          {loading && (
+            <LoadingSpinner 
+              loading={true} 
+              message="Salvando conta..."
+              variant="backdrop"
+              fullScreen={false}
+            />
+          )}
+          
           <form onSubmit={handleSubmit}>
             <CardContent>
               <Stack spacing={3}>
@@ -365,7 +379,7 @@ export default function NewAccount() {
                 <Button
                   type="submit"
                   variant="contained"
-                  startIcon={loading ? <LoadingSpinner loading={true} /> : <Save />}
+                  startIcon={loading ? <CircularProgress size={20} /> : <Save />}
                   disabled={loading}
                 >
                   {loading ? 'Salvando...' : 'Salvar Conta'}

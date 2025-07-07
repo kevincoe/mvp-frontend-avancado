@@ -89,11 +89,18 @@ export default function NewInvestment() {
 
   const loadAccounts = async () => {
     try {
+      setLoading(true);
+      
+      // Simular delay para mostrar o loading
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
       const accountsData = StorageService.getAccounts();
       const activeAccounts = accountsData.filter(acc => acc.status === 'ACTIVE');
       setAccounts(activeAccounts);
     } catch (err) {
       setError('Erro ao carregar contas');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -123,6 +130,9 @@ export default function NewInvestment() {
       setCurrentQuote(null);
       
       console.log('🔍 Buscando cotação para:', symbol);
+      
+      // Simular delay para mostrar o loading
+      await new Promise(resolve => setTimeout(resolve, 1200));
       
       // Buscar cotação via API
       const response = await FinanceService.getStockQuote(symbol);
@@ -215,7 +225,8 @@ export default function NewInvestment() {
       setLoading(true);
       setError(null);
 
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simula um delay para a operação
+      // Simular delay para mostrar o loading
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
       const newInvestment: Investment = {
         id: crypto.randomUUID(),
@@ -252,6 +263,24 @@ export default function NewInvestment() {
 
   const totalValue = parseFloat(formData.quantity) * parseFloat(formData.purchasePrice) || 0;
 
+  // Mostrar loading spinner durante carregamento inicial
+  if (loading && accounts.length === 0) {
+    return (
+      <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
+        <Header />
+        <Container maxWidth="md" sx={{ py: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+            <LoadingSpinner 
+              loading={true} 
+              message="Carregando contas disponíveis..."
+              size="large"
+            />
+          </Box>
+        </Container>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
       <Header />
@@ -274,10 +303,19 @@ export default function NewInvestment() {
           </Box>
         )}
 
-        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-          {/* Formulário Principal */}
-          <Box sx={{ flex: '1 1 600px', minWidth: '300px' }}>
-            <Card>
+        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>        {/* Formulário Principal */}
+        <Box sx={{ flex: '1 1 600px', minWidth: '300px', position: 'relative' }}>
+          {/* Loading Overlay para salvamento */}
+          {loading && accounts.length > 0 && (
+            <LoadingSpinner 
+              loading={true} 
+              message="Salvando investimento..."
+              variant="backdrop"
+              fullScreen={false}
+            />
+          )}
+          
+          <Card>
               <form onSubmit={handleSubmit}>
                 <CardContent>
                   <Stack spacing={3}>
@@ -340,7 +378,17 @@ export default function NewInvestment() {
                         </Box>
 
                         {/* Cotação Atual */}
-                        {currentQuote && (
+                        {searchingStock && (
+                          <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+                            <LoadingSpinner 
+                              loading={true} 
+                              message="Buscando cotação..."
+                              size="small"
+                            />
+                          </Box>
+                        )}
+                        
+                        {currentQuote && !searchingStock && (
                           <Alert severity="success" sx={{ mb: 2 }}>
                             <Box>
                               <Typography variant="body2">
