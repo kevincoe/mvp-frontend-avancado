@@ -24,7 +24,7 @@ Um sistema completo de gerenciamento bancário para gerentes, desenvolvido com R
 ## 🚀 Instalação e Execução
 
 ### Pré-requisitos
-- Node.js (versão 18 ou superior)
+- Node.js 22
 - npm ou yarn
 
 ### Instalação
