@@ -1,23 +1,55 @@
+/**
+ * Core domain types following DDD principles
+ * Represents the business entities and value objects
+ */
+
+export type AccountType = 'SAVINGS' | 'CHECKING' | 'BUSINESS';
+export type AccountStatus = 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
+
 export interface BankAccount {
     id: string;
     accountNumber: string;
-    accountType: 'SAVINGS' | 'CHECKING' | 'BUSINESS';
+    accountType: AccountType;
     balance: number;
     customerName: string;
     customerCpf: string;
     customerEmail: string;
     customerPhone: string;
-    status: 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
+    status: AccountStatus;
     createdAt: Date;
     updatedAt?: Date;
+    // Business account specific fields
+    businessName?: string;
+    businessCnpj?: string;
 }
 
+// Command patterns for operations
+export interface CreateAccountCommand {
+    customerName: string;
+    customerCpf: string;
+    customerEmail: string;
+    customerPhone: string;
+    accountType: AccountType;
+    balance: number;
+    businessName: string;
+    businessCnpj: string;
+    isBusinessAccount: boolean;
+}
+
+// Result patterns for operations
+export interface OperationResult<T = any> {
+    success: boolean;
+    data?: T;
+    error?: string;
+    validationErrors?: Record<string, string>;
+}
+
+// Investment types (maintaining existing structure)
 export interface Investment {
     id: string;
-    accountId: string;
     symbol: string;
     name: string;
-    type: 'STOCK' | 'FUND' | 'BOND' | 'CRYPTO';
+    type: 'STOCK' | 'BOND' | 'FUND' | 'CRYPTO';
     quantity: number;
     purchasePrice: number;
     currentPrice: number;
@@ -25,59 +57,13 @@ export interface Investment {
     lastUpdate: Date;
 }
 
-export interface StockQuote {
-    symbol: string;
-    name: string;
-    price: number;
-    change: number;
-    changePercent: number;
-    currency: string;
-    marketTime: Date;
-}
-
-export interface DollarQuote {
-    price: number;
-    change: number;
-    changePercent: number;
-    lastUpdate: Date;
-}
-
-export interface YahooFinanceResponse {
-    chart: {
-        result: [{
-            meta: {
-                regularMarketPrice: number;
-                previousClose: number;
-                regularMarketTime: number;
-                currency: string;
-            };
-        }];
-    };
-}
-export interface ApiResponse<T> {
-    success: boolean;
-    data?: T;
-    error?: string;
-}
-
-export interface ApiErrorDetails {
-    code: string;
-    message: string;
-    details?: any;
-}
-export interface BankAccount {
+export interface Portfolio {
     id: string;
-    accountNumber: string;
-    accountType: 'SAVINGS' | 'CHECKING' | 'BUSINESS';
-    balance: number;
-    customerName: string;
-    customerCpf: string;
-    customerEmail: string;
-    customerPhone: string;
-    status: 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
-    createdAt: Date;
-    updatedAt?: Date;
-    // Add business account fields
-    businessName?: string;
-    businessCnpj?: string;
+    accountId: string;
+    investments: Investment[];
+    totalValue: number;
+    totalCost: number;
+    profitLoss: number;
+    profitLossPercentage: number;
+    lastUpdate: Date;
 }

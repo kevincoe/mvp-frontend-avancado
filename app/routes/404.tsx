@@ -176,46 +176,46 @@ export default function NotFound() {
               Páginas Disponíveis:
             </Typography>
             
-<Grid container spacing={3}>
-  {navigationOptions.map((option) => (
-    <Grid item xs={12} md={4} key={option.path}>
-      <Card 
-        sx={{ 
-          height: '100%',
-          cursor: 'pointer',
-          transition: 'transform 0.2s, box-shadow 0.2s',
-          '&:hover': {
-            transform: 'translateY(-4px)',
-            boxShadow: 4
-          }
-        }}
-        onClick={() => navigate(option.path)}
-      >
-        <CardContent sx={{ textAlign: 'center', p: 3 }}>
-          <Avatar 
-            sx={{ 
-              bgcolor: option.color,
-              width: 56,
-              height: 56,
-              mx: 'auto',
-              mb: 2
-            }}
-          >
-            {option.icon}
-          </Avatar>
-          
-          <Typography variant="h6" gutterBottom>
-            {option.title}
-          </Typography>
-          
-          <Typography variant="body2" color="text.secondary">
-            {option.description}
-          </Typography>
-        </CardContent>
-      </Card>
-    </Grid>
-  ))}
-</Grid>
+            <Grid container spacing={3}>
+              {navigationOptions.map((option) => (
+                <Grid item xs={12} md={4} key={option.path}>
+                  <Card 
+                    sx={{ 
+                      height: '100%',
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s, box-shadow 0.2s',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: 4
+                      }
+                    }}
+                    onClick={() => navigate(option.path)}
+                  >
+                    <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                      <Avatar 
+                        sx={{ 
+                          bgcolor: option.color,
+                          width: 56,
+                          height: 56,
+                          mx: 'auto',
+                          mb: 2
+                        }}
+                      >
+                        {option.icon}
+                      </Avatar>
+                      
+                      <Typography variant="h6" gutterBottom>
+                        {option.title}
+                      </Typography>
+                      
+                      <Typography variant="body2" color="text.secondary">
+                        {option.description}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
           </Box>
 
           {/* Help Section */}

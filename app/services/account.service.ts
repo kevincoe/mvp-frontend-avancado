@@ -1,82 +1,68 @@
 import { ValidationService } from './validation';
 import { StorageService } from './storage';
-import type { BankAccount } from '../types';
+import type { BankAccount, CreateAccountCommand, OperationResult, AccountType } from '../types';
 
-export interface CreateAccountCommand {
-    customerName: string;
-    customerCpf: string;
-    customerEmail: string;
-    customerPhone: string;
-    accountType: 'SAVINGS' | 'CHECKING' | 'BUSINESS';
-    balance: number;
-    businessName?: string;
-    businessCnpj?: string;
-    isBusinessAccount: boolean;
-}
-
-export interface AccountCreationResult {
-    success: boolean;
-    account?: BankAccount;
-    error?: string;
-    validationErrors?: Record<string, string>;
-}
-
+/**
+ * Account Service - Domain Service Layer
+ * Implements business logic and domain rules following DDD principles
+ */
 export class AccountService {
+    private static readonly ACCOUNT_NUMBER_PREFIX = {
+        SAVINGS: '10',
+        CHECKING: '20',
+        BUSINESS: '30'
+    } as const;
+
     /**
-     * Creates a new bank account following business rules
+     * Creates a new bank account following domain business rules
+     * @param command - Account creation command
+     * @returns Promise with operation result
      */
-    static async createAccount(command: CreateAccountCommand): Promise<AccountCreationResult> {
+    static async createAccount(command: CreateAccountCommand): Promise<OperationResult<BankAccount>> {
         try {
-            // Domain validation
-            const validationResult = this.validateAccountCreation(command);
-            if (!validationResult.isValid) {
-                return {
-                    success: false,
-                    validationErrors: validationResult.errors
-                };
+            // 1. Domain validation
+            const validationResult = await this.validateAccountCreation(command);
+            if (!validationResult.success) {
+                return validationResult;
             }
 
-            // Business rules validation
+            // 2. Business rules validation
             const businessValidation = await this.validateBusinessRules(command);
-            if (!businessValidation.isValid) {
-                return {
-                    success: false,
-                    error: businessValidation.error
-                };
+            if (!businessValidation.success) {
+                return businessValidation;
             }
 
-            // Generate account number using domain logic
+            // 3. Generate account number using domain logic
             const accountNumber = this.generateAccountNumber(command.accountType);
 
-            // Create domain entity
+            // 4. Create domain entity
             const newAccount: BankAccount = {
                 id: crypto.randomUUID(),
-                customerName: command.customerName.trim(),
-                customerCpf: command.customerCpf.replace(/\D/g, ''),
-                customerEmail: command.customerEmail.trim().toLowerCase(),
-                customerPhone: command.customerPhone.replace(/\D/g, ''),
+                customerName: this.sanitizeString(command.customerName),
+                customerCpf: this.sanitizeDocument(command.customerCpf),
+                customerEmail: this.sanitizeEmail(command.customerEmail),
+                customerPhone: this.sanitizeDocument(command.customerPhone),
                 accountNumber,
                 accountType: command.accountType,
-                balance: command.balance,
+                balance: Math.max(0, command.balance), // Ensure non-negative
                 status: 'ACTIVE',
                 createdAt: new Date(),
                 ...(command.isBusinessAccount && {
-                    businessName: command.businessName?.trim(),
-                    businessCnpj: command.businessCnpj?.replace(/\D/g, ''),
+                    businessName: this.sanitizeString(command.businessName),
+                    businessCnpj: this.sanitizeDocument(command.businessCnpj),
                 })
             };
 
-            // Persist using repository pattern
-            const existingAccounts = StorageService.getAccounts();
-            const updatedAccounts = [...existingAccounts, newAccount];
-            StorageService.saveAccounts(updatedAccounts);
+            // 5. Persist using repository pattern
+            await this.saveAccount(newAccount);
 
             return {
                 success: true,
-                account: newAccount
+                data: newAccount
             };
 
         } catch (error) {
+            console.error('Account creation error:', error);
             return {
                 success: false,
                 error: error instanceof Error ? error.message : 'Erro interno do sistema'
@@ -85,92 +71,157 @@ export class AccountService {
     }
 
     /**
-     * Domain validation using validation service
+     * Validates account creation command
      */
-    private static validateAccountCreation(command: CreateAccountCommand): {
-        isValid: boolean;
-        errors?: Record<string, string>;
-    } {
+    private static async validateAccountCreation(
+        command: CreateAccountCommand
+    ): Promise<OperationResult> {
         const schema = command.isBusinessAccount
             ? ValidationService.businessAccountSchema
             : ValidationService.accountSchema;
 
         const errors = ValidationService.validateSchema(command, schema);
 
-        return {
-            isValid: Object.keys(errors).length === 0,
-            errors: Object.keys(errors).length > 0 ? errors : undefined
-        };
+        if (Object.keys(errors).length > 0) {
+            return {
+                success: false,
+                validationErrors: errors
+            };
+        }
+
+        return { success: true };
     }
 
     /**
-     * Business rules validation (duplicate documents, etc.)
+     * Validates business rules (duplicates, constraints)
      */
-    private static async validateBusinessRules(command: CreateAccountCommand): Promise<{
-        isValid: boolean;
-        error?: string;
-    }> {
-        const existingAccounts = StorageService.getAccounts();
+    private static async validateBusinessRules(
+        command: CreateAccountCommand
+    ): Promise<OperationResult> {
+        const existingAccounts = await StorageService.getAccounts();
 
         // Check for duplicate CPF
         const duplicateCpf = existingAccounts.find(acc =>
-            acc.customerCpf === command.customerCpf.replace(/\D/g, '')
+            acc.customerCpf === this.sanitizeDocument(command.customerCpf)
         );
 
         if (duplicateCpf) {
             return {
-                isValid: false,
-                error: 'CPF já cadastrado no sistema'
+                success: false,
+                error: 'CPF já cadastrado no sistema. Cada CPF pode ter apenas uma conta.'
             };
         }
 
         // Check for duplicate CNPJ (business accounts)
         if (command.isBusinessAccount && command.businessCnpj) {
             const duplicateCnpj = existingAccounts.find(acc =>
-                acc.businessCnpj === command.businessCnpj?.replace(/\D/g, '')
+                acc.businessCnpj === this.sanitizeDocument(command.businessCnpj)
             );
 
             if (duplicateCnpj) {
                 return {
-                    isValid: false,
-                    error: 'CNPJ já cadastrado no sistema'
+                    success: false,
+                    error: 'CNPJ já cadastrado no sistema. Cada CNPJ pode ter apenas uma conta.'
                 };
             }
         }
 
-        return { isValid: true };
+        // Validate minimum balance for account type
+        const minBalance = this.getMinimumBalance(command.accountType);
+        if (command.balance < minBalance) {
+            return {
+                success: false,
+                error: `Saldo mínimo para ${command.accountType === 'BUSINESS' ? 'conta empresarial' : 'esta conta'} é R$ ${minBalance.toFixed(2)}`
+            };
+        }
+
+        return { success: true };
     }
 
     /**
-     * Generate account number following business logic
+     * Generates account number following business logic
      */
-    private static generateAccountNumber(accountType: string): string {
+    private static generateAccountNumber(accountType: AccountType): string {
+        const prefix = this.ACCOUNT_NUMBER_PREFIX[accountType];
         const timestamp = Date.now().toString().slice(-6);
-        const random = Math.floor(Math.random() * 10);
-        const prefix = accountType === 'BUSINESS' ? '99' : '88';
+        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        const checkDigit = this.calculateCheckDigit(`${prefix}${timestamp}${random}`);
 
-        return `${prefix}${timestamp}-${random}`;
+        return `${prefix}${timestamp}${random}-${checkDigit}`;
     }
 
     /**
-     * Get accounts with filtering and pagination
+     * Calculates check digit for account number
      */
-    static getAccounts(filters?: {
+    private static calculateCheckDigit(baseNumber: string): string {
+        const weights = [2, 3, 4, 5, 6, 7, 8, 9];
+        let sum = 0;
+
+        for (let i = 0; i < baseNumber.length; i++) {
+            sum += parseInt(baseNumber[i]) * weights[i % weights.length];
+        }
+
+        const remainder = sum % 11;
+        return remainder < 2 ? '0' : (11 - remainder).toString();
+    }
+
+    /**
+     * Gets minimum balance for account type
+     */
+    private static getMinimumBalance(accountType: AccountType): number {
+        const minimums = {
+            SAVINGS: 0,
+            CHECKING: 0,
+            BUSINESS: 100
+        };
+        return minimums[accountType];
+    }
+
+    /**
+     * Data sanitization methods for security
+     */
+    private static sanitizeString(value: string): string {
+        return value.trim().replace(/[<>\"']/g, '');
+    }
+
+    private static sanitizeDocument(value: string): string {
+        return value.replace(/\D/g, '');
+    }
+
+    private static sanitizeEmail(value: string): string {
+        return value.trim().toLowerCase();
+    }
+
+    /**
+     * Saves account using repository pattern
+     */
+    private static async saveAccount(account: BankAccount): Promise<void> {
+        const existingAccounts = await StorageService.getAccounts();
+        const updatedAccounts = [...existingAccounts, account];
+        await StorageService.saveAccounts(updatedAccounts);
+    }
+
+    /**
+     * Retrieves accounts with filtering and pagination
+     */
+    static async getAccounts(filters?: {
         searchTerm?: string;
-        accountType?: string;
+        accountType?: AccountType;
         status?: string;
         limit?: number;
         offset?: number;
-    }): BankAccount[] {
-        let accounts = StorageService.getAccounts();
+    }): Promise<BankAccount[]> {
+        let accounts = await StorageService.getAccounts();
 
+        // Apply filters
         if (filters?.searchTerm) {
             const term = filters.searchTerm.toLowerCase();
             accounts = accounts.filter(account =>
                 account.customerName.toLowerCase().includes(term) ||
                 account.accountNumber.includes(term) ||
                 account.customerCpf.includes(term) ||
-                account.customerEmail.toLowerCase().includes(term)
+                account.customerEmail.toLowerCase().includes(term) ||
+                (account.businessName && account.businessName.toLowerCase().includes(term))
             );
         }
 
@@ -182,8 +233,8 @@ export class AccountService {
             accounts = accounts.filter(account => account.status === filters.status);
         }
 
-        // Pagination
-        if (filters?.limit || filters?.offset) {
+        // Apply pagination
+        if (filters?.offset !== undefined || filters?.limit !== undefined) {
             const offset = filters.offset || 0;
             const limit = filters.limit || 10;
             accounts = accounts.slice(offset, offset + limit);
@@ -193,25 +244,76 @@ export class AccountService {
     }
 
     /**
-     * Get account statistics for dashboard
+     * Gets account statistics for dashboard
      */
-    static getAccountStatistics(): {
-        totalAccounts: number;
-        activeAccounts: number;
-        businessAccounts: number;
-        totalBalance: number;
-        avgBalance: number;
-    } {
-        const accounts = StorageService.getAccounts();
+    static async getAccountStatistics() {
+        const accounts = await StorageService.getAccounts();
 
         return {
             totalAccounts: accounts.length,
             activeAccounts: accounts.filter(acc => acc.status === 'ACTIVE').length,
             businessAccounts: accounts.filter(acc => acc.accountType === 'BUSINESS').length,
+            personalAccounts: accounts.filter(acc => acc.accountType !== 'BUSINESS').length,
             totalBalance: accounts.reduce((sum, acc) => sum + acc.balance, 0),
             avgBalance: accounts.length > 0
                 ? accounts.reduce((sum, acc) => sum + acc.balance, 0) / accounts.length
-                : 0
+                : 0,
+            accountsByType: {
+                SAVINGS: accounts.filter(acc => acc.accountType === 'SAVINGS').length,
+                CHECKING: accounts.filter(acc => acc.accountType === 'CHECKING').length,
+                BUSINESS: accounts.filter(acc => acc.accountType === 'BUSINESS').length,
+            }
         };
     }
+
+    /**
+     * Finds account by ID
+     */
+    static async findAccountById(id: string): Promise<BankAccount | null> {
+        const accounts = await StorageService.getAccounts();
+        return accounts.find(account => account.id === id) || null;
+    }
+
+    /**
+     * Updates account balance (for future transactions)
+     */
+    static async updateBalance(accountId: string, newBalance: number): Promise<OperationResult<BankAccount>> {
+        try {
+            const accounts = await StorageService.getAccounts();
+            const accountIndex = accounts.findIndex(acc => acc.id === accountId);
+
+            if (accountIndex === -1) {
+                return {
+                    success: false,
+                    error: 'Conta não encontrada'
+                };
+            }
+
+            if (newBalance < 0) {
+                return {
+                    success: false,
+                    error: 'Saldo não pode ser negativo'
+                };
+            }
+
+            accounts[accountIndex].balance = newBalance;
+            accounts[accountIndex].updatedAt = new Date();
+
+            await StorageService.saveAccounts(accounts);
+
+            return {
+                success: true,
+                data: accounts[accountIndex]
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : 'Erro ao atualizar saldo'
+            };
+        }
+    }
 }
+
+// Export interfaces for component usage
+export type { CreateAccountCommand };
+export type AccountCreationResult = OperationResult<BankAccount>;

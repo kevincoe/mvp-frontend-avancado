@@ -57,7 +57,7 @@ export function meta() {
 
 export default function Investments() {
   const [searchParams] = useSearchParams();
-  const accountIdFilter = searchParams.get('accountId');
+  const accountIdFilter = searchParams.get('accountId') || '';
   
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
@@ -100,7 +100,7 @@ export default function Investments() {
 
     // Filtrar por conta específica se fornecida
     if (accountIdFilter) {
-      filtered = filtered.filter(inv => inv.accountId === accountIdFilter);
+      filtered = filtered.filter(investment => investment.accountId === accountIdFilter);
     }
 
     // Filtrar por termo de busca

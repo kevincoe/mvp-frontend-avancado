@@ -155,7 +155,7 @@ export default function NewAccount() {
       // Success
       setAlertState({
         open: true,
-        message: `Conta ${result.account?.accountNumber} criada com sucesso!`,
+        message: `Conta ${result.data?.accountNumber} criada com sucesso!`,
         severity: 'success',
       });
       

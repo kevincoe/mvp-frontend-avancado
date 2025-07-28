@@ -1,200 +1,212 @@
-// Utilitários para formatação e validação
-
 /**
- * Formatadores de valores
+ * Comprehensive formatters utility following Brazilian standards
+ * Provides secure and consistent data formatting
  */
+
 export const formatters = {
     /**
-     * Formata valor monetário em BRL
+     * Currency formatting (Brazilian Real)
      */
     currency: (value: number): string => {
+        if (typeof value !== 'number' || isNaN(value)) return 'R$ 0,00';
+
         return new Intl.NumberFormat('pt-BR', {
             style: 'currency',
             currency: 'BRL',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
         }).format(value);
     },
 
     /**
-     * Formata número com separadores de milhares
+     * Percentage formatting
      */
-    number: (value: number): string => {
-        return new Intl.NumberFormat('pt-BR').format(value);
-    },
+    percentage: (value: number, decimals: number = 2): string => {
+        if (typeof value !== 'number' || isNaN(value)) return '0,00%';
 
-    /**
-     * Formata data no formato brasileiro
-     */
-    date: (date: Date | string): string => {
-        const dateObj = typeof date === 'string' ? new Date(date) : date;
-        return new Intl.DateTimeFormat('pt-BR').format(dateObj);
-    },
-
-    /**
-     * Formata data e hora no formato brasileiro
-     */
-    dateTime: (date: Date | string): string => {
-        const dateObj = typeof date === 'string' ? new Date(date) : date;
-        return new Intl.DateTimeFormat('pt-BR', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-        }).format(dateObj);
-    },
-
-    /**
-     * Formata CPF
-     */
-    // Enhanced document formatters
-    cpf: (value: string): string => {
-        const digits = value.replace(/\D/g, '');
-        return digits.replace(/^(\d{3})(\d{3})(\d{3})(\d{2}).*/, '$1.$2.$3-$4');
-    },
-
-    cnpj: (value: string): string => {
-        const digits = value.replace(/\D/g, '');
-        return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2}).*/, '$1.$2.$3/$4-$5');
-    },
-
-    phone: (value: string): string => {
-        const digits = value.replace(/\D/g, '');
-        if (digits.length <= 10) {
-            return digits.replace(/^(\d{2})(\d{4})(\d{4}).*/, '($1) $2-$3');
-        } else {
-            return digits.replace(/^(\d{2})(\d{5})(\d{4}).*/, '($1) $2-$3');
-        }
-    },
-
-    /**
-     * Formata porcentagem
-     */
-    percentage: (value: number): string => {
         return new Intl.NumberFormat('pt-BR', {
             style: 'percent',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
         }).format(value / 100);
     },
 
     /**
-     * Formata número de conta bancária
+     * Number formatting
      */
-    accountNumber: (accountNumber: string): string => {
-        const cleaned = accountNumber.replace(/\D/g, '');
-        if (cleaned.length >= 6) {
-            return cleaned.replace(/(\d{4})(\d{1})(\d+)/, '$1-$2-$3');
-        }
-        return accountNumber;
+    number: (value: number, decimals?: number): string => {
+        if (typeof value !== 'number' || isNaN(value)) return '0';
+
+        return new Intl.NumberFormat('pt-BR', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        }).format(value);
     },
+
+    /**
+     * CPF formatting (000.000.000-00)
+     */
+    cpf: (value: string): string => {
+        if (!value) return '';
+        const digits = value.replace(/\D/g, '');
+
+        if (digits.length <= 11) {
+            return digits.replace(/^(\d{3})(\d{3})(\d{3})(\d{2}).*/, '$1.$2.$3-$4');
+        }
+
+        return value; // Return original if too long
+    },
+
+    /**
+     * CNPJ formatting (00.000.000/0000-00)
+     */
+    cnpj: (value: string): string => {
+        if (!value) return '';
+        const digits = value.replace(/\D/g, '');
+
+        if (digits.length <= 14) {
+            return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2}).*/, '$1.$2.$3/$4-$5');
+        }
+
+        return value; // Return original if too long
+    },
+
+    /**
+     * Phone formatting (Brazilian format)
+     */
+    phone: (value: string): string => {
+        if (!value) return '';
+        const digits = value.replace(/\D/g, '');
+
+        if (digits.length <= 10) {
+            // Fixed line: (11) 1234-5678
+            return digits.replace(/^(\d{2})(\d{4})(\d{4}).*/, '($1) $2-$3');
+        } else if (digits.length <= 11) {
+            // Mobile: (11) 91234-5678
+            return digits.replace(/^(\d{2})(\d{5})(\d{4}).*/, '($1) $2-$3');
+        }
+
+        return value; // Return original if too long
+    },
+
+    /**
+     * Date formatting (Brazilian format)
+     */
+    date: (date: Date | string | null): string => {
+        if (!date) return '';
+
+        try {
+            const dateObj = typeof date === 'string' ? new Date(date) : date;
+
+            if (isNaN(dateObj.getTime())) return '';
+
+            return new Intl.DateTimeFormat('pt-BR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).format(dateObj);
+        } catch {
+            return '';
+        }
+    },
+
+    /**
+     * DateTime formatting (Brazilian format)
+     */
+    dateTime: (date: Date | string | null): string => {
+        if (!date) return '';
+
+        try {
+            const dateObj = typeof date === 'string' ? new Date(date) : date;
+
+            if (isNaN(dateObj.getTime())) return '';
+
+            return new Intl.DateTimeFormat('pt-BR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).format(dateObj);
+        } catch {
+            return '';
+        }
+    },
+
+    /**
+     * Time formatting
+     */
+    time: (date: Date | string | null): string => {
+        if (!date) return '';
+
+        try {
+            const dateObj = typeof date === 'string' ? new Date(date) : date;
+
+            if (isNaN(dateObj.getTime())) return '';
+
+            return new Intl.DateTimeFormat('pt-BR', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).format(dateObj);
+        } catch {
+            return '';
+        }
+    },
+
+    /**
+     * Relative time formatting (e.g., "2 hours ago")
+     */
+    relativeTime: (date: Date | string): string => {
+        if (!date) return '';
+
+        try {
+            const dateObj = typeof date === 'string' ? new Date(date) : date;
+            const now = new Date();
+            const diffInSeconds = Math.floor((now.getTime() - dateObj.getTime()) / 1000);
+
+            if (diffInSeconds < 60) return 'agora mesmo';
+            if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} min atrás`;
+            if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} h atrás`;
+            if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} dias atrás`;
+
+            return formatters.date(dateObj);
+        } catch {
+            return '';
+        }
+    },
+
+    /**
+     * Account number formatting
+     */
+    accountNumber: (value: string): string => {
+        if (!value) return '';
+        // Format: 12345678-9
+        const clean = value.replace(/\D/g, '');
+        return clean.replace(/^(\d{8})(\d{1}).*/, '$1-$2');
+    },
+
+    /**
+     * File size formatting
+     */
+    fileSize: (bytes: number): string => {
+        if (bytes === 0) return '0 Bytes';
+
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
 };
 
 /**
- * Validadores
- */
-export const validators = {
-    /**
-     * Valida CPF
-     */
-    cpf: (cpf: string): boolean => {
-        const cleaned = cpf.replace(/\D/g, '');
-
-        if (cleaned.length !== 11) return false;
-
-        // Verifica se todos os dígitos são iguais
-        if (/^(\d)\1+$/.test(cleaned)) return false;
-
-        // Validação do primeiro dígito verificador
-        let sum = 0;
-        for (let i = 0; i < 9; i++) {
-            sum += parseInt(cleaned[i]) * (10 - i);
-        }
-        let remainder = sum % 11;
-        const firstDigit = remainder < 2 ? 0 : 11 - remainder;
-
-        if (parseInt(cleaned[9]) !== firstDigit) return false;
-
-        // Validação do segundo dígito verificador
-        sum = 0;
-        for (let i = 0; i < 10; i++) {
-            sum += parseInt(cleaned[i]) * (11 - i);
-        }
-        remainder = sum % 11;
-        const secondDigit = remainder < 2 ? 0 : 11 - remainder;
-
-        return parseInt(cleaned[10]) === secondDigit;
-    },
-
-    /**
-     * Valida e-mail
-     */
-    email: (email: string): boolean => {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    },
-
-    /**
-     * Valida telefone brasileiro
-     */
-    phone: (phone: string): boolean => {
-        const cleaned = phone.replace(/\D/g, '');
-        return cleaned.length === 10 || cleaned.length === 11;
-    },
-
-    /**
-     * Valida se o valor é um número positivo
-     */
-    positiveNumber: (value: number | string): boolean => {
-        const num = typeof value === 'string' ? parseFloat(value) : value;
-        return !isNaN(num) && num > 0;
-    },
-
-    /**
-     * Valida se o valor não é vazio
-     */
-    required: (value: any): boolean => {
-        if (value === null || value === undefined) return false;
-        if (typeof value === 'string') return value.trim().length > 0;
-        if (Array.isArray(value)) return value.length > 0;
-        return true;
-    },
-
-    /**
-     * Valida comprimento mínimo
-     */
-    minLength: (value: string, length: number): boolean => {
-        return value.length >= length;
-    },
-
-    /**
-     * Valida comprimento máximo
-     */
-    maxLength: (value: string, length: number): boolean => {
-        return value.length <= length;
-    },
-};
-
-/**
- * Utilitários gerais
+ * Utility functions for data manipulation
  */
 export const utils = {
     /**
-     * Gera um ID único
-     */
-    generateId: (): string => {
-        return Date.now().toString(36) + Math.random().toString(36).substr(2);
-    },
-
-    /**
-     * Calcula a diferença em porcentagem entre dois valores
-     */
-    calculatePercentageChange: (current: number, previous: number): number => {
-        if (previous === 0) return 0;
-        return ((current - previous) / previous) * 100;
-    },
-
-    /**
-     * Debounce para otimizar chamadas de função
+     * Debounce function for performance optimization
      */
     debounce: <T extends (...args: any[]) => any>(
         func: T,
@@ -205,163 +217,182 @@ export const utils = {
             clearTimeout(timeoutId);
             timeoutId = setTimeout(() => func(...args), delay);
         };
-    }
-    ,
-
-    /**
-     * Ordena array de objetos por uma propriedade
-     */
-    sortBy: <T>(array: T[], key: keyof T, direction: 'asc' | 'desc' = 'asc'): T[] => {
-        return [...array].sort((a, b) => {
-            const aValue = a[key];
-            const bValue = b[key];
-
-            if (aValue < bValue) return direction === 'asc' ? -1 : 1;
-            if (aValue > bValue) return direction === 'asc' ? 1 : -1;
-            return 0;
-        });
     },
 
     /**
-     * Filtra array por texto de busca
+     * Throttle function for rate limiting
      */
-    filterBySearch: <T>(
-        array: T[],
-        searchTerm: string,
-        searchFields: (keyof T)[]
-    ): T[] => {
-        if (!searchTerm) return array;
+    throttle: <T extends (...args: any[]) => any>(
+        func: T,
+        delay: number
+    ): ((...args: Parameters<T>) => void) => {
+        let lastCall = 0;
+        return (...args: Parameters<T>) => {
+            const now = Date.now();
+            if (now - lastCall >= delay) {
+                lastCall = now;
+                func(...args);
+            }
+        };
+    },
 
-        const lowerSearchTerm = searchTerm.toLowerCase();
-        return array.filter(item =>
-            searchFields.some(field => {
-                const value = item[field];
-                return value && value.toString().toLowerCase().includes(lowerSearchTerm);
-            })
+    /**
+     * Document cleaners (remove formatting)
+     */
+    cleanCPF: (cpf: string): string => cpf.replace(/\D/g, ''),
+    cleanCNPJ: (cnpj: string): string => cnpj.replace(/\D/g, ''),
+    cleanPhone: (phone: string): string => phone.replace(/\D/g, ''),
+    cleanCurrency: (currency: string): number => {
+        const cleaned = currency.replace(/[^\d,]/g, '').replace(',', '.');
+        return parseFloat(cleaned) || 0;
+    },
+
+    /**
+     * String utilities
+     */
+    capitalize: (str: string): string => {
+        if (!str) return '';
+        return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    },
+
+    capitalizeWords: (str: string): string => {
+        if (!str) return '';
+        return str.replace(/\w\S*/g, (txt) =>
+            txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
         );
     },
 
-    /**
-     * Converte string para formato de busca (sem acentos, minúsculo)
-     */
-    normalizeString: (str: string): string => {
-        return str
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .toLowerCase();
+    truncate: (str: string, length: number, suffix: string = '...'): string => {
+        if (!str || str.length <= length) return str;
+        return str.substring(0, length) + suffix;
+    },
+
+    removeAccents: (str: string): string => {
+        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     },
 
     /**
-     * Copia texto para a área de transferência
+     * Array utilities
      */
-    copyToClipboard: async (text: string): Promise<boolean> => {
+    groupBy: <T>(array: T[], key: keyof T): Record<string, T[]> => {
+        return array.reduce((groups, item) => {
+            const group = String(item[key]);
+            groups[group] = groups[group] || [];
+            groups[group].push(item);
+            return groups;
+        }, {} as Record<string, T[]>);
+    },
+
+    /**
+     * Object utilities
+     */
+    deepClone: <T>(obj: T): T => {
+        if (obj === null || typeof obj !== 'object') return obj;
+        if (obj instanceof Date) return new Date(obj.getTime()) as any;
+        if (obj instanceof Array) return obj.map(item => utils.deepClone(item)) as any;
+
+        const cloned = {} as T;
+        for (const key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                cloned[key] = utils.deepClone(obj[key]);
+            }
+        }
+        return cloned;
+    },
+
+    /**
+     * Validation helpers
+     */
+    isValidEmail: (email: string): boolean => {
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        return emailRegex.test(email);
+    },
+
+    isValidURL: (url: string): boolean => {
         try {
-            await navigator.clipboard.writeText(text);
+            new URL(url);
             return true;
-        } catch (err) {
-            console.error('Falha ao copiar texto:', err);
+        } catch {
             return false;
         }
     },
 
     /**
-     * Converte valor para número seguro
+     * Security utilities
      */
-    safeNumber: (value: any): number => {
-        const num = typeof value === 'string' ? parseFloat(value) : value;
-        return isNaN(num) ? 0 : num;
+    sanitizeHtml: (str: string): string => {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     },
 
-    /**
-     * Trunca texto com reticências
-     */
-    truncateText: (text: string, maxLength: number): string => {
-        if (text.length <= maxLength) return text;
-        return text.substring(0, maxLength) + '...';
-    },
-
-    /**
-     * Converte objeto para query string
-     */
-    objectToQueryString: (obj: Record<string, any>): string => {
-        const params = new URLSearchParams();
-        Object.entries(obj).forEach(([key, value]) => {
-            if (value !== null && value !== undefined && value !== '') {
-                params.append(key, value.toString());
-            }
-        });
-        return params.toString();
-    },
-
-    /**
-     * Verifica se o dispositivo é mobile
-     */
-    isMobile: (): boolean => {
-        return window.innerWidth < 768;
-    },
-
-    /**
-     * Formata bytes para formato legível
-     */
-    formatBytes: (bytes: number): string => {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    },
-    // Document cleaners
-    cleanCPF: (cpf: string): string => cpf.replace(/\D/g, ''),
-    cleanCNPJ: (cnpj: string): string => cnpj.replace(/\D/g, ''),
-    cleanPhone: (phone: string): string => phone.replace(/\D/g, ''),
+    escapeRegExp: (str: string): string => {
+        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
 };
 
 /**
- * Constantes do sistema
+ * Validators for direct use
  */
-export const constants = {
-    ACCOUNT_TYPES: {
-        SAVINGS: 'Poupança',
-        CHECKING: 'Conta Corrente',
-        BUSINESS: 'Conta Empresarial',
+export const validators = {
+    cpf: (value: string): boolean => {
+        const clean = utils.cleanCPF(value);
+        if (clean.length !== 11) return false;
+        if (/^(\d)\1{10}$/.test(clean)) return false;
+
+        // CPF validation algorithm
+        let sum = 0;
+        for (let i = 1; i <= 9; i++) {
+            sum += parseInt(clean.substring(i - 1, i)) * (11 - i);
+        }
+
+        let remainder = (sum * 10) % 11;
+        if (remainder === 10 || remainder === 11) remainder = 0;
+        if (remainder !== parseInt(clean.substring(9, 10))) return false;
+
+        sum = 0;
+        for (let i = 1; i <= 10; i++) {
+            sum += parseInt(clean.substring(i - 1, i)) * (12 - i);
+        }
+
+        remainder = (sum * 10) % 11;
+        if (remainder === 10 || remainder === 11) remainder = 0;
+
+        return remainder === parseInt(clean.substring(10, 11));
     },
 
-    INVESTMENT_TYPES: {
-        STOCK: 'Ações',
-        FUND: 'Fundos',
-        BOND: 'Títulos',
-        CRYPTO: 'Criptomoedas',
+    cnpj: (value: string): boolean => {
+        const clean = utils.cleanCNPJ(value);
+        if (clean.length !== 14) return false;
+        if (/^(\d)\1{13}$/.test(clean)) return false;
+
+        // CNPJ validation algorithm
+        let sum = 0;
+        const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+        const weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+
+        for (let i = 0; i < 12; i++) {
+            sum += parseInt(clean[i]) * weights1[i];
+        }
+        let remainder = sum % 11;
+        const digit1 = remainder < 2 ? 0 : 11 - remainder;
+
+        if (digit1 !== parseInt(clean[12])) return false;
+
+        sum = 0;
+        for (let i = 0; i < 13; i++) {
+            sum += parseInt(clean[i]) * weights2[i];
+        }
+        remainder = sum % 11;
+        const digit2 = remainder < 2 ? 0 : 11 - remainder;
+
+        return digit2 === parseInt(clean[13]);
     },
 
-    ACCOUNT_STATUS: {
-        ACTIVE: 'Ativa',
-        INACTIVE: 'Inativa',
-        BLOCKED: 'Bloqueada',
+    phone: (value: string): boolean => {
+        const clean = utils.cleanPhone(value);
+        return clean.length >= 10 && clean.length <= 11;
     },
 
-    STORAGE_KEYS: {
-        ACCOUNTS: 'banking_accounts',
-        INVESTMENTS: 'banking_investments',
-        SETTINGS: 'banking_settings',
-    },
-
-    REGEX_PATTERNS: {
-        CPF: /^\d{3}\.\d{3}\.\d{3}-\d{2}$/,
-        PHONE: /^\(\d{2}\) \d{4,5}-\d{4}$/,
-        EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-    },
-
-    CHART_COLORS: {
-        PRIMARY: '#1976d2',
-        SECONDARY: '#dc004e',
-        SUCCESS: '#2e7d32',
-        ERROR: '#d32f2f',
-        WARNING: '#ed6c02',
-        INFO: '#0288d1',
-    },
-
-    DEFAULT_PAGINATION: {
-        PAGE_SIZE: 10,
-        PAGE_SIZE_OPTIONS: [5, 10, 25, 50],
-    },
+    email: (value: string): boolean => utils.isValidEmail(value)
 };
