@@ -46,32 +46,24 @@ export const formatters = {
     /**
      * Formata CPF
      */
-    cpf: (cpf: string): string => {
-        const cleaned = cpf.replace(/\D/g, '');
-        const match = cleaned.match(/(\d{3})(\d{3})(\d{3})(\d{2})/);
-        if (match) {
-            return `${match[1]}.${match[2]}.${match[3]}-${match[4]}`;
-        }
-        return cpf;
+    // Enhanced document formatters
+    cpf: (value: string): string => {
+        const digits = value.replace(/\D/g, '');
+        return digits.replace(/^(\d{3})(\d{3})(\d{3})(\d{2}).*/, '$1.$2.$3-$4');
     },
 
-    /**
-     * Formata telefone brasileiro
-     */
-    phone: (phone: string): string => {
-        const cleaned = phone.replace(/\D/g, '');
-        if (cleaned.length === 11) {
-            const match = cleaned.match(/(\d{2})(\d{5})(\d{4})/);
-            if (match) {
-                return `(${match[1]}) ${match[2]}-${match[3]}`;
-            }
-        } else if (cleaned.length === 10) {
-            const match = cleaned.match(/(\d{2})(\d{4})(\d{4})/);
-            if (match) {
-                return `(${match[1]}) ${match[2]}-${match[3]}`;
-            }
+    cnpj: (value: string): string => {
+        const digits = value.replace(/\D/g, '');
+        return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2}).*/, '$1.$2.$3/$4-$5');
+    },
+
+    phone: (value: string): string => {
+        const digits = value.replace(/\D/g, '');
+        if (digits.length <= 10) {
+            return digits.replace(/^(\d{2})(\d{4})(\d{4}).*/, '($1) $2-$3');
+        } else {
+            return digits.replace(/^(\d{2})(\d{5})(\d{4}).*/, '($1) $2-$3');
         }
-        return phone;
     },
 
     /**
@@ -204,7 +196,7 @@ export const utils = {
     /**
      * Debounce para otimizar chamadas de função
      */
-    debounce: <T extends (...args: any[]) => void>(
+    debounce: <T extends (...args: any[]) => any>(
         func: T,
         delay: number
     ): ((...args: Parameters<T>) => void) => {
@@ -213,7 +205,8 @@ export const utils = {
             clearTimeout(timeoutId);
             timeoutId = setTimeout(() => func(...args), delay);
         };
-    },
+    }
+    ,
 
     /**
      * Ordena array de objetos por uma propriedade
@@ -317,6 +310,10 @@ export const utils = {
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     },
+    // Document cleaners
+    cleanCPF: (cpf: string): string => cpf.replace(/\D/g, ''),
+    cleanCNPJ: (cnpj: string): string => cnpj.replace(/\D/g, ''),
+    cleanPhone: (phone: string): string => phone.replace(/\D/g, ''),
 };
 
 /**

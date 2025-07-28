@@ -54,9 +54,30 @@ export interface YahooFinanceResponse {
         }];
     };
 }
-
 export interface ApiResponse<T> {
     success: boolean;
     data?: T;
     error?: string;
+}
+
+export interface ApiErrorDetails {
+    code: string;
+    message: string;
+    details?: any;
+}
+export interface BankAccount {
+    id: string;
+    accountNumber: string;
+    accountType: 'SAVINGS' | 'CHECKING' | 'BUSINESS';
+    balance: number;
+    customerName: string;
+    customerCpf: string;
+    customerEmail: string;
+    customerPhone: string;
+    status: 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
+    createdAt: Date;
+    updatedAt?: Date;
+    // Add business account fields
+    businessName?: string;
+    businessCnpj?: string;
 }
